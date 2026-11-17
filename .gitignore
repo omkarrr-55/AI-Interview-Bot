@@ -1,0 +1,25 @@
+# Environment variables
+.env
+
+# Python Virtual Environments
+ai-question-bot-env/
+ai-resume-analyzer/
+venv/
+env/
+ENV/
+
+# Bytecode & Caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Uploaded Files
+uploads/*
+!uploads/.gitkeep
+
+# IDEs & System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
