@@ -1,0 +1,649 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Resume Analyzer - Skillverse{% endblock %}
+{% block breadcrumb %}AI Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Page Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+            <div>
+                <h2 class="section-title">AI Resume Analyzer</h2>
+                <p class="section-desc">Comprehensive AI audit of your resume structure, ATS parseability, skill gaps, and competitive impact.</p>
+            </div>
+            {% if analysis %}
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('resume_analyzer') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-repeat"></i> Analyze Another Resume
+                </a>
+                <button id="downloadReportBtn" class="btn-cp-primary">
+                    <i class="bi bi-file-earmark-pdf-fill"></i> Download PDF Report
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if not analysis %}
+        <!-- Upload Card -->
+        <div class="tool-card col-lg-8 mx-auto">
+            <form method="post" enctype="multipart/form-data" id="analyzerUploadForm">
+                <div class="upload-dropzone mb-4" id="dropzoneContainer" onclick="document.getElementById('resumeFileInput').click();">
+                    <div class="upload-icon">
+                        <i class="bi bi-file-earmark-medical-fill"></i>
+                    </div>
+                    <div class="upload-title" id="dropzoneTitle">Click or drag &amp; drop your resume here</div>
+                    <div class="upload-subtitle" id="selectedFileName">Supports .pdf and .docx documents (up to 16MB)</div>
+                    <div class="file-format-tags">
+                        <span class="format-tag"><i class="bi bi-file-earmark-pdf"></i> PDF</span>
+                        <span class="format-tag"><i class="bi bi-file-earmark-word"></i> DOCX</span>
+                    </div>
+                    <input type="file" name="resume" id="resumeFileInput" class="d-none" accept=".docx,.pdf" required onchange="handleFileSelect(this)">
+                </div>
+
+                <!-- Analysis Progress State (Hidden initially) -->
+                <div id="analysisProgressContainer" class="d-none mb-4 p-4 rounded-3 border bg-light">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fw-bold text-dark small" id="progressStatusText">Auditing resume with AI...</span>
+                        <span class="badge bg-primary" id="progressPercentage">25%</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" id="analysisProgressBar" role="progressbar" style="width: 25%"></div>
+                    </div>
+                    <div class="small text-muted" id="progressSubText">
+                        <i class="bi bi-cpu me-1"></i> Extracting text &amp; analyzing ATS parameters via Groq Llama 3.3...
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="text-muted small">
+                        <i class="bi bi-shield-check text-success"></i> Strict privacy: Files are wiped from storage immediately after analysis.
+                    </div>
+                    <button type="submit" id="submitAnalyzeBtn" class="btn-cp-primary px-4 py-2">
+                        <span id="btnText"><i class="bi bi-lightning-charge-fill"></i> Run Resume Audit</span>
+                        <span id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if analysis %}
+        <!-- Analysis Results Dashboard -->
+        <div id="resultsDashboardContainer">
+            <!-- Row 1: Score & ATS Overview -->
+            <div class="row g-4 mb-4">
+                <!-- Overall Score Card -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="score-card">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="fw-bold text-muted small text-uppercase" style="letter-spacing: 0.05em;">Overall Resume Score</span>
+                            {% set score = analysis.overall_score %}
+                            {% if score >= 80 %}
+                                <span class="score-badge-pill bg-success-subtle text-success border border-success-subtle">Exceptional</span>
+                            {% elif score >= 65 %}
+                                <span class="score-badge-pill bg-primary-subtle text-primary border border-primary-subtle">Competitive</span>
+                            {% elif score >= 50 %}
+                                <span class="score-badge-pill bg-warning-subtle text-warning border border-warning-subtle">Average</span>
+                            {% else %}
+                                <span class="score-badge-pill bg-danger-subtle text-danger border border-danger-subtle">Needs Work</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="score-circle {% if score >= 80 %}grade-exceptional{% elif score >= 65 %}grade-competitive{% elif score >= 50 %}grade-average{% else %}grade-low{% endif %}">
+                            <span class="number">{{ analysis.overall_score }}</span>
+                            <span class="total">/ 100</span>
+                        </div>
+
+                        <p class="text-center text-muted small mb-0 px-2">
+                            {{ analysis.score_explanation }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- ATS Readiness Card -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="score-card">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="fw-bold text-muted small text-uppercase" style="letter-spacing: 0.05em;">ATS Parseability</span>
+                            <span class="score-badge-pill {% if analysis.ats_readiness.level == 'High' %}bg-success-subtle text-success border border-success-subtle{% elif analysis.ats_readiness.level == 'Moderate' %}bg-warning-subtle text-warning border border-warning-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %}">
+                                {{ analysis.ats_readiness.level }} Match
+                            </span>
+                        </div>
+
+                        <div class="d-flex align-items-baseline justify-content-center gap-1 mb-2">
+                            <span class="display-5 fw-bold text-dark">{{ analysis.ats_readiness.score }}</span>
+                            <span class="text-muted fw-semibold">/ 100</span>
+                        </div>
+
+                        <p class="small text-muted mb-3">
+                            {{ analysis.ats_readiness.explanation }}
+                        </p>
+
+                        <div class="ats-metric-box mt-auto">
+                            <div class="fw-bold small text-dark mb-2">Key ATS Parser Findings:</div>
+                            {% for finding in analysis.ats_readiness.key_findings %}
+                            <div class="ats-list-item">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                <span>{{ finding }}</span>
+                            </div>
+                            {% endfor %}
+                            <div class="text-muted mt-2 pt-2 border-top" style="font-size: 0.72rem;">
+                                <i class="bi bi-info-circle me-1"></i> Indicative score based on standard ATS parser heuristics.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Metrics Card -->
+                <div class="col-lg-4 col-md-12">
+                    <div class="score-card">
+                        <div class="fw-bold text-muted small text-uppercase mb-3" style="letter-spacing: 0.05em;">Audit Summary</div>
+                        
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light border">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="p-2 rounded bg-primary text-white"><i class="bi bi-code-slash"></i></div>
+                                    <div>
+                                        <div class="fw-bold small text-dark">Technical Skills</div>
+                                        <div class="text-muted" style="font-size:0.75rem;">Identified in document</div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-primary fs-6">{{ analysis.skills_analysis.technical_skills|length }}</span>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light border">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="p-2 rounded bg-success text-white"><i class="bi bi-hand-thumbs-up"></i></div>
+                                    <div>
+                                        <div class="fw-bold small text-dark">Core Strengths</div>
+                                        <div class="text-muted" style="font-size:0.75rem;">Standout qualities</div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-success fs-6">{{ analysis.strengths|length }}</span>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light border">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="p-2 rounded bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i></div>
+                                    <div>
+                                        <div class="fw-bold small text-dark">Critical Fixes</div>
+                                        <div class="text-muted" style="font-size:0.75rem;">Areas needing attention</div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-warning text-dark fs-6">{{ analysis.weaknesses|length }}</span>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light border">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="p-2 rounded bg-info text-white"><i class="bi bi-lightbulb"></i></div>
+                                    <div>
+                                        <div class="fw-bold small text-dark">Actionable Tips</div>
+                                        <div class="text-muted" style="font-size:0.75rem;">Step-by-step rewrites</div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-info text-dark fs-6">{{ analysis.improvement_recommendations|length }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Strengths & Weaknesses -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm" style="border-radius: 16px; border-top: 4px solid var(--sv-green) !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                <h4 class="h5 fw-bold mb-0 text-dark">Standout Strengths</h4>
+                            </div>
+                            <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
+                                {% for s in analysis.strengths %}
+                                <li class="d-flex align-items-start gap-2 text-dark small">
+                                    <i class="bi bi-check2 text-success fw-bold fs-6 mt-1"></i>
+                                    <span>{{ s }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm" style="border-radius: 16px; border-top: 4px solid var(--sv-terracotta) !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+                                <h4 class="h5 fw-bold mb-0 text-dark">Critical Weaknesses &amp; Gaps</h4>
+                            </div>
+                            <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
+                                {% for w in analysis.weaknesses %}
+                                <li class="d-flex align-items-start gap-2 text-dark small">
+                                    <i class="bi bi-x-circle text-danger fw-bold fs-6 mt-1"></i>
+                                    <span>{{ w }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Skills Architecture -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px;">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-cpu-fill text-primary fs-4"></i>
+                        <div>
+                            <h4 class="h5 fw-bold mb-0 text-dark">Skills &amp; Keywords Architecture</h4>
+                            <div class="text-muted small">Taxonomy of technical and soft skills parsed from your resume.</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <div class="fw-bold small text-dark text-uppercase mb-2" style="letter-spacing:0.04em;">
+                                <i class="bi bi-code-slash text-primary me-1"></i> Technical Skills ({{ analysis.skills_analysis.technical_skills|length }})
+                            </div>
+                            <div>
+                                {% for skill in analysis.skills_analysis.technical_skills %}
+                                <span class="skill-tag-pill skill-tag-tech">{{ skill }}</span>
+                                {% else %}
+                                <span class="text-muted small">No specific technical skills detected.</span>
+                                {% endfor %}
+                            </div>
+
+                            <div class="fw-bold small text-dark text-uppercase mt-4 mb-2" style="letter-spacing:0.04em;">
+                                <i class="bi bi-people text-success me-1"></i> Soft &amp; Leadership Skills ({{ analysis.skills_analysis.soft_skills|length }})
+                            </div>
+                            <div>
+                                {% for skill in analysis.skills_analysis.soft_skills %}
+                                <span class="skill-tag-pill skill-tag-soft">{{ skill }}</span>
+                                {% else %}
+                                <span class="text-muted small">None explicitly stated.</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="fw-bold small text-danger text-uppercase mb-2" style="letter-spacing:0.04em;">
+                                <i class="bi bi-patch-exclamation text-danger me-1"></i> Missing / Underrepresented Skills (Recommended)
+                            </div>
+                            <p class="text-muted small mb-2">High-demand skills typically expected for profiles in your domain that are currently missing:</p>
+                            <div>
+                                {% for skill in analysis.skills_analysis.missing_or_underrepresented %}
+                                <span class="skill-tag-pill skill-tag-missing"><i class="bi bi-plus-circle me-1"></i> {{ skill }}</span>
+                                {% else %}
+                                <span class="text-muted small">No critical missing skills detected.</span>
+                                {% endfor %}
+                            </div>
+
+                            <div class="fw-bold small text-dark text-uppercase mt-4 mb-2" style="letter-spacing:0.04em;">
+                                <i class="bi bi-tags text-secondary me-1"></i> Industry Keywords Detected
+                            </div>
+                            <div>
+                                {% for kw in analysis.skills_analysis.relevant_keywords %}
+                                <span class="skill-tag-pill skill-tag-keyword">{{ kw }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 4: Section-by-Section Quality Audit -->
+            <div class="mb-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <h3 class="section-title">Detailed Section-by-Section Evaluation</h3>
+                        <div class="section-desc">Granular scores and critique for each resume component.</div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    {% set section_icons = {
+                        'summary': 'bi-person-badge',
+                        'experience': 'bi-briefcase',
+                        'education': 'bi-mortarboard',
+                        'skills': 'bi-tools',
+                        'projects': 'bi-folder-check',
+                        'certifications': 'bi-award'
+                    } %}
+                    {% for sec_name, sec_data in analysis.section_analysis.items() %}
+                    <div class="col-lg-4 col-md-6">
+                        <div class="analysis-section-card">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi {{ section_icons.get(sec_name, 'bi-file-text') }} text-primary fs-5"></i>
+                                    <span class="fw-bold text-dark text-capitalize">{{ sec_name }}</span>
+                                </div>
+                                {% set verdict = sec_data.verdict %}
+                                <span class="verdict-badge {% if verdict == 'Strong' %}verdict-strong{% elif verdict == 'Satisfactory' %}verdict-satisfactory{% elif verdict == 'Needs Improvement' %}verdict-needs-work{% else %}verdict-missing{% endif %}">
+                                    {{ verdict }}
+                                </span>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between small text-muted mb-1">
+                                <span>Section Quality</span>
+                                <span class="fw-bold text-dark">{{ sec_data.score }}%</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 6px;">
+                                <div class="progress-bar {% if sec_data.score >= 80 %}bg-success{% elif sec_data.score >= 65 %}bg-primary{% elif sec_data.score >= 50 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ sec_data.score }}%"></div>
+                            </div>
+
+                            <p class="small text-muted mb-0" style="line-height: 1.5;">
+                                {{ sec_data.feedback }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Row 5: Actionable Improvement Recommendations -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px;">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-magic fs-4" style="color: var(--sv-terracotta);"></i>
+                        <div>
+                            <h4 class="h5 fw-bold mb-0 text-dark">Actionable Recommendations &amp; Bullet Point Optimization</h4>
+                            <div class="text-muted small">Concrete examples showing how to transform passive descriptions into metric-driven achievements.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column gap-4">
+                        {% for rec in analysis.improvement_recommendations %}
+                        <div class="p-3 rounded-3 border bg-light">
+                            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                <span class="badge bg-secondary-subtle text-secondary border small">{{ rec.section }}</span>
+                                <span class="fw-bold text-dark">{{ rec.title }}</span>
+                            </div>
+                            <p class="small text-muted mb-3">{{ rec.action }}</p>
+
+                            {% if rec.example_before and rec.example_after %}
+                            <div class="diff-box before">
+                                <span class="diff-label"><i class="bi bi-x-circle me-1"></i> Original / Weak Phrasing</span>
+                                {{ rec.example_before }}
+                            </div>
+                            <div class="diff-box after">
+                                <span class="diff-label"><i class="bi bi-check-circle me-1"></i> Optimized (XYZ Formula: Action + Metric + Impact)</span>
+                                {{ rec.example_after }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- jsPDF Library for PDF Report Export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+    // Handle File Selection and Visual Cues
+    function handleFileSelect(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+
+            if (file.size > 16 * 1024 * 1024) {
+                alert("File size exceeds 16MB limit. Please upload a smaller document.");
+                input.value = "";
+                return;
+            }
+
+            document.getElementById('dropzoneTitle').innerText = file.name;
+            document.getElementById('selectedFileName').innerHTML = `<span class="badge" style="background-color: var(--sv-terracotta);">${sizeMB} MB</span> Ready for deep AI audit`;
+            document.getElementById('dropzoneContainer').style.borderColor = '#c46b4f';
+            document.getElementById('dropzoneContainer').style.backgroundColor = '#fbf1ea';
+        }
+    }
+
+    // Drag-and-drop listener
+    const dropzone = document.getElementById('dropzoneContainer');
+    if (dropzone) {
+        ['dragenter', 'dragover'].forEach(name => {
+            dropzone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.style.borderColor = '#c46b4f';
+                dropzone.style.backgroundColor = '#fbf1ea';
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+            dropzone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.style.borderColor = '#e8ded1';
+                dropzone.style.backgroundColor = '#faf5ee';
+            });
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('resumeFileInput').files = files;
+                handleFileSelect(document.getElementById('resumeFileInput'));
+            }
+        });
+    }
+
+    // Form submit loading animation
+    const form = document.getElementById('analyzerUploadForm');
+    if (form) {
+        form.addEventListener('submit', function() {
+            const btn = document.getElementById('submitAnalyzeBtn');
+            const btnText = document.getElementById('btnText');
+            const spinner = document.getElementById('btnSpinner');
+            const progressBox = document.getElementById('analysisProgressContainer');
+
+            btn.disabled = true;
+            btnText.innerText = "Analyzing Resume...";
+            spinner.classList.remove('d-none');
+            progressBox.classList.remove('d-none');
+
+            // Simulated step progression for smooth UX
+            let progress = 25;
+            const bar = document.getElementById('analysisProgressBar');
+            const pText = document.getElementById('progressStatusText');
+            const pct = document.getElementById('progressPercentage');
+
+            const interval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 15;
+                    bar.style.width = progress + '%';
+                    pct.innerText = progress + '%';
+                    if (progress > 40 && progress < 70) {
+                        pText.innerText = "Evaluating section structure & technical competencies...";
+                    } else if (progress >= 70) {
+                        pText.innerText = "Computing ATS parseability & crafting bullet rewrites...";
+                    }
+                } else {
+                    clearInterval(interval);
+                }
+            }, 800);
+        });
+    }
+
+    {% if analysis %}
+    // PDF Report Generator using jsPDF
+    document.getElementById('downloadReportBtn')?.addEventListener('click', function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+        const score = {{ analysis.overall_score }};
+        const atsScore = {{ analysis.ats_readiness.score }};
+        const atsLevel = "{{ analysis.ats_readiness.level }}";
+        const grade = "{{ analysis.score_grade }}";
+
+        let y = 18;
+
+        // Skillverse Header
+        doc.setFillColor(64, 59, 54);
+        doc.rect(0, 0, 210, 26, 'F');
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.setTextColor(255, 255, 255);
+        doc.text("Skillverse - AI Resume Audit Report", 14, 15);
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(243, 233, 217);
+        doc.text("Your Skills. Your Future. Your Universe. | Generated: " + new Date().toLocaleDateString(), 14, 21);
+
+        y = 36;
+
+        // Executive Score Box
+        doc.setFillColor(250, 245, 238);
+        doc.roundedRect(14, y, 182, 28, 3, 3, 'F');
+        doc.setDrawColor(232, 222, 209);
+        doc.roundedRect(14, y, 182, 28, 3, 3, 'D');
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(196, 107, 79);
+        doc.text("Overall Score: " + score + "/100 (" + grade + ")", 20, y + 10);
+
+        doc.setFontSize(12);
+        doc.setTextColor(79, 128, 100);
+        doc.text("ATS Parseability: " + atsScore + "/100 (" + atsLevel + " Match)", 110, y + 10);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(130, 120, 111);
+        const explanationLines = doc.splitTextToSize("{{ analysis.score_explanation | replace('\"', '\\\"') }}", 170);
+        doc.text(explanationLines, 20, y + 18);
+
+        y += 36;
+
+        // Technical Skills Section
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(64, 59, 54);
+        doc.text("1. Technical Skills Detected", 14, y);
+        y += 6;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(130, 120, 111);
+        const techSkills = {{ analysis.skills_analysis.technical_skills | tojson }};
+        const skillsText = techSkills.join(", ") || "None detected";
+        const splitSkills = doc.splitTextToSize(skillsText, 182);
+        doc.text(splitSkills, 14, y);
+        y += (splitSkills.length * 5) + 6;
+
+        // Missing Skills
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(64, 59, 54);
+        doc.text("2. Recommended Missing Skills (In-Demand)", 14, y);
+        y += 6;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(196, 107, 79);
+        const missingSkills = {{ analysis.skills_analysis.missing_or_underrepresented | tojson }};
+        const missingText = missingSkills.join(", ") || "No critical gaps found";
+        const splitMissing = doc.splitTextToSize(missingText, 182);
+        doc.text(splitMissing, 14, y);
+        y += (splitMissing.length * 5) + 8;
+
+        // Core Strengths
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(64, 59, 54);
+        doc.text("3. Core Strengths", 14, y);
+        y += 6;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(64, 59, 54);
+        const strengths = {{ analysis.strengths | tojson }};
+        strengths.forEach(s => {
+            const lines = doc.splitTextToSize("[+] " + s, 178);
+            doc.text(lines, 18, y);
+            y += (lines.length * 5) + 2;
+        });
+
+        y += 4;
+
+        // Check if page break needed
+        if (y > 230) {
+            doc.addPage();
+            y = 20;
+        }
+
+        // Critical Weaknesses
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(64, 59, 54);
+        doc.text("4. Critical Areas for Improvement", 14, y);
+        y += 6;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(64, 59, 54);
+        const weaknesses = {{ analysis.weaknesses | tojson }};
+        weaknesses.forEach(w => {
+            const lines = doc.splitTextToSize("[-] " + w, 178);
+            doc.text(lines, 18, y);
+            y += (lines.length * 5) + 2;
+        });
+
+        y += 6;
+
+        if (y > 230) {
+            doc.addPage();
+            y = 20;
+        }
+
+        // Actionable Recommendations
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(64, 59, 54);
+        doc.text("5. Priority Action Steps & Rewrites", 14, y);
+        y += 6;
+
+        const recs = {{ analysis.improvement_recommendations | tojson }};
+        recs.forEach(r => {
+            if (y > 250) {
+                doc.addPage();
+                y = 20;
+            }
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(196, 107, 79);
+            doc.text(r.title + " (" + r.section + ")", 14, y);
+            y += 5;
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.setTextColor(130, 120, 111);
+            const actLines = doc.splitTextToSize(r.action, 180);
+            doc.text(actLines, 14, y);
+            y += (actLines.length * 5) + 4;
+        });
+
+        // Footer on all pages
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(130, 120, 111);
+            doc.text("Skillverse AI Resume Audit • Confidential & Proprietary • Page " + i + " of " + pageCount, 14, 290);
+        }
+
+        doc.save("Skillverse_Resume_Analysis_Report.pdf");
+    });
+    {% endif %}
+</script>
+{% endblock %}

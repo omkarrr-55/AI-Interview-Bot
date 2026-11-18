@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ feature_title }} - Skillverse{% endblock %}
+{% block breadcrumb %}{{ feature_title }}{% endblock %}
+
+{% block content %}
+<div class="coming-soon-container">
+    <div class="cs-icon-box">
+        <i class="bi {{ feature_icon }}"></i>
+    </div>
+    <span class="cs-badge">Phase 4 Roadmap</span>
+    <h1 class="cs-title">{{ feature_title }}</h1>
+    <p class="cs-description">
+        {{ feature_description }}
+    </p>
+
+    {% if planned_items %}
+    <div class="cs-feature-list">
+        <div class="fw-bold mb-2 text-dark small text-uppercase" style="letter-spacing: 0.05em;">Planned Capabilities</div>
+        {% for item in planned_items %}
+        <div class="cs-feature-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>{{ item }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-center gap-3 flex-wrap">
+        <a href="{{ url_for('question_generator_page') }}" class="btn-cp-primary">
+            <i class="bi bi-lightning-charge-fill"></i> Try Active Question Generator
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn-cp-outline">
+            <i class="bi bi-arrow-left"></i> Return to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

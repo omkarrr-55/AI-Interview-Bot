@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Skillverse - Your Skills. Your Future. Your Universe.{% endblock %}</title>
+    <!-- Skillverse Favicon (Knowledge & Growth: Cap + Book) -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
+    <link rel="alternate icon" href="{{ url_for('static', filename='images/favicon.svg') }}">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom Skillverse Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Sidebar Backdrop for Mobile -->
+        <div class="sidebar-backdrop" id="sidebarBackdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1025;"></div>
+
+        <!-- Left Sidebar Navigation -->
+        <aside class="app-sidebar" id="appSidebar">
+            <div class="sidebar-header">
+                <a href="{{ url_for('dashboard') }}" class="brand-link" aria-label="Skillverse Home">
+                    <img src="{{ url_for('static', filename='images/logo-compact.svg') }}" alt="Skillverse - Your Skills. Your Future. Your Universe." class="brand-logo-img">
+                </a>
+                <span class="brand-badge">PRO</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-title">Navigation</div>
+                <a href="{{ url_for('dashboard') }}" class="nav-item-link {% if active_page == 'dashboard' %}active{% endif %}">
+                    <div class="nav-item-left">
+                        <i class="bi bi-grid-fill nav-icon"></i>
+                        <span>Dashboard</span>
+                    </div>
+                </a>
+
+                <div class="nav-section-title mt-2">Resume & Career Tools</div>
+                <a href="{{ url_for('resume_analyzer') }}" class="nav-item-link {% if active_page == 'resume_analyzer' %}active{% endif %}">
+                    <div class="nav-item-left">
+                        <i class="bi bi-file-earmark-person nav-icon"></i>
+                        <span>AI Resume Analyzer</span>
+                    </div>
+                    <span class="sidebar-badge active-badge">Active</span>
+                </a>
+                <a href="{{ url_for('resume_builder') }}" class="nav-item-link {% if active_page == 'resume_builder' %}active{% endif %}">
+                    <div class="nav-item-left">
+                        <i class="bi bi-file-earmark-text nav-icon"></i>
+                        <span>AI Resume Builder</span>
+                    </div>
+                    <span class="sidebar-badge">Soon</span>
+                </a>
+                <a href="{{ url_for('ats_checker') }}" class="nav-item-link {% if active_page == 'ats_checker' %}active{% endif %}">
+                    <div class="nav-item-left">
+                        <i class="bi bi-shield-check nav-icon"></i>
+                        <span>ATS Resume Checker</span>
+                    </div>
+                    <span class="sidebar-badge">Soon</span>
+                </a>
+                <a href="{{ url_for('job_matcher') }}" class="nav-item-link {% if active_page == 'job_matcher' %}active{% endif %}">
+                    <div class="nav-item-left">
+                        <i class="bi bi-bullseye nav-icon"></i>
+                        <span>Job Description Matcher</span>
+                    </div>
+                    <span class="sidebar-badge">Soon</span>
+                </a>
+
+                <div class="nav-section-title mt-2">Interview Preparation</div>
+                <a href="{{ url_for('question_generator_page') }}" class="nav-item-link {% if active_page == 'question_generator' %}active{% endif %}">
+                    <div class="nav-item-left">
+                        <i class="bi bi-patch-question-fill nav-icon"></i>
+                        <span>Question Generator</span>
+                    </div>
+                    <span class="sidebar-badge active-badge">Active</span>
+                </a>
+                <a href="{{ url_for('mock_interview') }}" class="nav-item-link {% if active_page == 'mock_interview' %}active{% endif %}">
+                    <div class="nav-item-left">
+                        <i class="bi bi-mic-fill nav-icon"></i>
+                        <span>Mock Interview</span>
+                    </div>
+                    <span class="sidebar-badge">Soon</span>
+                </a>
+                <a href="{{ url_for('career_roadmap') }}" class="nav-item-link {% if active_page == 'career_roadmap' %}active{% endif %}">
+                    <div class="nav-item-left">
+                        <i class="bi bi-signpost-split-fill nav-icon"></i>
+                        <span>Career Roadmap</span>
+                    </div>
+                    <span class="sidebar-badge">Soon</span>
+                </a>
+
+                <div class="nav-section-title mt-2">System</div>
+                <a href="{{ url_for('settings_page') }}" class="nav-item-link {% if active_page == 'settings' %}active{% endif %}">
+                    <div class="nav-item-left">
+                        <i class="bi bi-gear-fill nav-icon"></i>
+                        <span>Settings</span>
+                    </div>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="ai-engine-status">
+                    <div class="status-dot"></div>
+                    <div>
+                        <div style="font-weight:600; font-size:0.78rem;">Groq Llama-3.3</div>
+                        <div style="font-size:0.7rem; color:#94a3b8;">High-speed AI Inference</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <div class="app-main">
+            <!-- Top Navbar -->
+            <header class="app-topbar">
+                <div class="topbar-left">
+                    <button class="sidebar-toggle-btn" id="sidebarToggle" aria-label="Toggle Sidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <!-- Mobile Brand Logo -->
+                    <a href="{{ url_for('dashboard') }}" class="topbar-brand-link d-md-none" aria-label="Skillverse Home">
+                        <img src="{{ url_for('static', filename='images/logo-compact.svg') }}" alt="Skillverse" class="topbar-logo-img">
+                    </a>
+                    <!-- Desktop Breadcrumb with Brand Icon -->
+                    <h1 class="topbar-breadcrumb">
+                        <img src="{{ url_for('static', filename='images/logo-icon.svg') }}" alt="Skillverse" class="breadcrumb-brand-icon d-none d-md-inline-block">
+                        <span class="breadcrumb-brand-text d-none d-md-inline">Skill<span class="breadcrumb-brand-verse">verse</span></span>
+                        <span class="d-none d-md-inline">/</span>
+                        <span>{% block breadcrumb %}Dashboard{% endblock %}</span>
+                    </h1>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="model-badge">
+                        <i class="bi bi-cpu"></i>
+                        <span>llama-3.3-70b</span>
+                    </div>
+
+                    <a href="{{ url_for('settings_page') }}" class="user-profile-menu">
+                        <div class="user-avatar">
+                            OM
+                        </div>
+                        <div class="user-meta">
+                            <span class="user-name">Omkar More</span>
+                            <span class="user-role">Software Engineer</span>
+                        </div>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Main Content Container -->
+            <main class="content-container">
+                {% if error %}
+                <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert" style="border-radius: 12px;">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </main>
+
+            <!-- Footer -->
+            <footer class="app-footer">
+                <div class="d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='images/logo-icon.svg') }}" alt="Skillverse" class="footer-brand-icon">
+                    <span>&copy; {{ now.year if now else "2026" }} <strong><span style="color:var(--sv-charcoal);">Skill</span><span style="color:var(--sv-terracotta);">verse</span></strong> &bull; Your Skills. Your Future. Your Universe.</span>
+                </div>
+                <div>
+                    Built with <span style="color:var(--sv-terracotta); font-size:1.1rem;">&hearts;</span> using Flask + Groq Cloud
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Responsive sidebar toggler for mobile & tablet
+        const sidebar = document.getElementById('appSidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        const toggleBtn = document.getElementById('sidebarToggle');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('show');
+            const isOpen = sidebar.classList.contains('show');
+            backdrop.style.display = isOpen ? 'block' : 'none';
+        }
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', toggleSidebar);
+        }
+        if (backdrop) {
+            backdrop.addEventListener('click', toggleSidebar);
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

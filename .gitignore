@@ -23,3 +23,8 @@ uploads/*
 .idea/
 .DS_Store
 Thumbs.db
+backup_rebrand/
+backup_phase3/
+backup_theme_redesign/
+*.bak
+static/images/test.txt

@@ -6,6 +6,13 @@ from dotenv import load_dotenv
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+MODELS = [
+    "qwen/qwen3.8-27b",
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "openai/gpt-oss-120b"
+]
+
 def generate_questions(keywords):
     if not keywords:
         return []
@@ -20,32 +27,38 @@ def generate_questions(keywords):
         "4. Do NOT add introductions like 'Here are the questions'."
     )
 
-    try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": "You are an expert technical interviewer."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=800,
-            temperature=0.7
-        )
+    for model_name in MODELS:
+        try:
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": "You are an expert technical interviewer."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=800,
+                temperature=0.7
+            )
 
-        raw_output = response.choices[0].message.content
+            raw_output = response.choices[0].message.content
+            if not raw_output:
+                continue
 
-        # Extract only numbered lines and truncate to first sentence
-        questions = []
-        for line in raw_output.split("\n"):
-            line = line.strip()
-            if line and line[0].isdigit():
-                # Take only the first sentence (up to first '?', or first '.')
-                if "?" in line:
-                    first_sentence = line.split("?")[0] + "?"
-                else:
-                    first_sentence = line.split(".")[0] + "?"
-                questions.append(first_sentence)
+            # Extract only numbered lines and truncate to first sentence
+            questions = []
+            for line in raw_output.split("\n"):
+                line = line.strip()
+                if line and line[0].isdigit():
+                    # Take only the first sentence (up to first '?', or first '.')
+                    if "?" in line:
+                        first_sentence = line.split("?")[0] + "?"
+                    else:
+                        first_sentence = line.split(".")[0] + "?"
+                    questions.append(first_sentence)
 
-        return questions
-    except Exception as e:
-        print(f"Error during question generation: {e}")
-        return []
+            if questions:
+                return questions
+        except Exception as e:
+            print(f"Error with model {model_name}: {e}")
+            continue
+
+    return []

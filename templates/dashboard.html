@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Skillverse{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="dashboard-hero">
+    <div class="hero-tag">
+        <img src="{{ url_for('static', filename='images/logo-icon.svg') }}" alt="Skillverse" class="hero-brand-icon"> Skillverse AI Ecosystem
+    </div>
+    <h1 class="hero-title">Build Your Career with AI</h1>
+    <p class="hero-subtitle">
+        Your Skills. Your Future. Your Universe.
+    </p>
+    <div class="hero-actions">
+        <a href="{{ url_for('question_generator_page') }}" class="btn-cp-primary">
+            <i class="bi bi-play-circle-fill"></i> Launch Question Generator
+        </a>
+        <a href="#suite-tools" class="btn-cp-secondary">
+            <i class="bi bi-grid-3x3-gap-fill"></i> View All Tools
+        </a>
+    </div>
+</div>
+
+<!-- Tools Suite Section -->
+<div class="section-header" id="suite-tools">
+    <div>
+        <h2 class="section-title">Career Intelligence Suite</h2>
+        <div class="section-desc">Explore tailored AI agents engineered to elevate every stage of your journey in the Skillverse.</div>
+    </div>
+</div>
+
+<div class="features-grid">
+    <!-- 1. Interview Question Generator (WORKING) -->
+    <div class="feature-card" style="border-top: 4px solid var(--sv-terracotta);">
+        <div class="feature-card-header">
+            <div class="feature-icon-wrapper grad-1">
+                <i class="bi bi-patch-question-fill"></i>
+            </div>
+            <span class="status-badge badge-active"><i class="bi bi-check2-circle"></i> Live Tool</span>
+        </div>
+        <h3 class="feature-title">Interview Question Generator</h3>
+        <p class="feature-desc">
+            Upload your resume (.pdf or .docx) to instantly extract technical keywords and generate targeted, single-sentence interview questions using Llama 3.3.
+        </p>
+        <div class="feature-card-footer">
+            <a href="{{ url_for('question_generator_page') }}" class="btn-cp-primary w-100 justify-content-center">
+                <i class="bi bi-lightning-charge-fill"></i> Launch Generator
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. AI Resume Analyzer (WORKING) -->
+    <div class="feature-card" style="border-top: 4px solid var(--sv-terracotta);">
+        <div class="feature-card-header">
+            <div class="feature-icon-wrapper grad-2">
+                <i class="bi bi-file-earmark-person"></i>
+            </div>
+            <span class="status-badge badge-active"><i class="bi bi-check2-circle"></i> Live Tool</span>
+        </div>
+        <h3 class="feature-title">AI Resume Analyzer</h3>
+        <p class="feature-desc">
+            In-depth structural breakdown of your resume with actionable feedback on layout, formatting consistency, impact verbs, and quantified achievements.
+        </p>
+        <div class="feature-card-footer">
+            <a href="{{ url_for('resume_analyzer') }}" class="btn-cp-primary w-100 justify-content-center">
+                <i class="bi bi-search"></i> Launch Analyzer
+            </a>
+        </div>
+    </div>
+
+    <!-- 3. AI Resume Builder -->
+    <div class="feature-card">
+        <div class="feature-card-header">
+            <div class="feature-icon-wrapper grad-3">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <span class="status-badge badge-soon">Coming Soon</span>
+        </div>
+        <h3 class="feature-title">AI Resume Builder</h3>
+        <p class="feature-desc">
+            Craft modern, high-impact resumes with AI-generated bullet points, optimized phrasing, and export-ready ATS compliant templates.
+        </p>
+        <div class="feature-card-footer">
+            <a href="{{ url_for('resume_builder') }}" class="btn-cp-outline w-100 justify-content-center">
+                <i class="bi bi-eye"></i> Preview Tool
+            </a>
+        </div>
+    </div>
+
+    <!-- 4. Mock Interview -->
+    <div class="feature-card">
+        <div class="feature-card-header">
+            <div class="feature-icon-wrapper grad-4">
+                <i class="bi bi-mic-fill"></i>
+            </div>
+            <span class="status-badge badge-soon">Coming Soon</span>
+        </div>
+        <h3 class="feature-title">Mock Interview Simulator</h3>
+        <p class="feature-desc">
+            Simulate real technical and behavioral interviews with conversational voice/text AI, adaptive follow-up questions, and instant STAR scoring.
+        </p>
+        <div class="feature-card-footer">
+            <a href="{{ url_for('mock_interview') }}" class="btn-cp-outline w-100 justify-content-center">
+                <i class="bi bi-eye"></i> Preview Tool
+            </a>
+        </div>
+    </div>
+
+    <!-- 5. ATS Resume Checker -->
+    <div class="feature-card">
+        <div class="feature-card-header">
+            <div class="feature-icon-wrapper grad-5">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <span class="status-badge badge-soon">Coming Soon</span>
+        </div>
+        <h3 class="feature-title">ATS Resume Checker</h3>
+        <p class="feature-desc">
+            Scan your resume against modern Applicant Tracking System algorithms to discover parseability errors, table issues, and keyword match rates.
+        </p>
+        <div class="feature-card-footer">
+            <a href="{{ url_for('ats_checker') }}" class="btn-cp-outline w-100 justify-content-center">
+                <i class="bi bi-eye"></i> Preview Tool
+            </a>
+        </div>
+    </div>
+
+    <!-- 6. Job Description Matcher -->
+    <div class="feature-card">
+        <div class="feature-card-header">
+            <div class="feature-icon-wrapper grad-6">
+                <i class="bi bi-bullseye"></i>
+            </div>
+            <span class="status-badge badge-soon">Coming Soon</span>
+        </div>
+        <h3 class="feature-title">Job Description Matcher</h3>
+        <p class="feature-desc">
+            Paste target job requirements to calculate your profile match percentage, reveal missing skills, and receive custom tailored bullet recommendations.
+        </p>
+        <div class="feature-card-footer">
+            <a href="{{ url_for('job_matcher') }}" class="btn-cp-outline w-100 justify-content-center">
+                <i class="bi bi-eye"></i> Preview Tool
+            </a>
+        </div>
+    </div>
+
+    <!-- 7. Career Roadmap -->
+    <div class="feature-card">
+        <div class="feature-card-header">
+            <div class="feature-icon-wrapper grad-7">
+                <i class="bi bi-signpost-split-fill"></i>
+            </div>
+            <span class="status-badge badge-soon">Coming Soon</span>
+        </div>
+        <h3 class="feature-title">Career Roadmap</h3>
+        <p class="feature-desc">
+            Step-by-step personalized learning paths, industry certifications, and portfolio project suggestions designed to bridge your career skill gaps.
+        </p>
+        <div class="feature-card-footer">
+            <a href="{{ url_for('career_roadmap') }}" class="btn-cp-outline w-100 justify-content-center">
+                <i class="bi bi-eye"></i> Preview Tool
+            </a>
+        </div>
+    </div>
+
+    <!-- 8. Settings & Preferences -->
+    <div class="feature-card">
+        <div class="feature-card-header">
+            <div class="feature-icon-wrapper grad-8">
+                <i class="bi bi-gear-fill"></i>
+            </div>
+            <span class="status-badge badge-soon">Configuration</span>
+        </div>
+        <h3 class="feature-title">Settings & Preferences</h3>
+        <p class="feature-desc">
+            Configure default target job roles, customize AI evaluation rigor, manage local uploaded resumes, and adjust model preferences.
+        </p>
+        <div class="feature-card-footer">
+            <a href="{{ url_for('settings_page') }}" class="btn-cp-outline w-100 justify-content-center">
+                <i class="bi bi-sliders"></i> Open Settings
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
