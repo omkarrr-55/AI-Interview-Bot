@@ -1,0 +1,1579 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Resume Builder - Skillverse{% endblock %}
+{% block breadcrumb %}AI Resume Builder{% endblock %}
+
+{% block extra_head %}
+<!-- Dedicated Resume Builder Stylesheet -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/resume_builder.css') }}">
+<!-- html2pdf.js for Client-Side High-Fidelity PDF Export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Tool Header -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+        <h2 class="section-title d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-text text-primary" style="color:var(--sv-terracotta) !important;"></i>
+            AI Resume Builder
+        </h2>
+        <p class="section-desc mb-0">Craft ATS-optimized, high-impact resumes with guided Groq AI writing assistance and instant PDF export.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnOpenSavedModal">
+            <i class="bi bi-folder2-open"></i> Saved Resumes (<span id="savedCountBadge">0</span>)
+        </button>
+        <button type="button" class="btn btn-outline-primary btn-sm" id="btnSaveResumeModal">
+            <i class="bi bi-cloud-arrow-up"></i> Save to Database
+        </button>
+        <button type="button" class="btn-cp-primary btn-sm px-3" id="btnDownloadPDF">
+            <i class="bi bi-download"></i> Download PDF
+        </button>
+    </div>
+</div>
+
+<!-- Builder Toolbar: Template Selector & Actions -->
+<div class="builder-toolbar">
+    <div class="template-selector-group">
+        <span class="small fw-bold text-muted text-uppercase" style="letter-spacing:0.05em; font-size:0.75rem;">Template:</span>
+        <button type="button" class="template-btn active" data-template="modern">
+            <i class="bi bi-palette"></i> Modern Clean
+        </button>
+        <button type="button" class="template-btn" data-template="classic">
+            <i class="bi bi-book"></i> Classic Executive
+        </button>
+        <button type="button" class="template-btn" data-template="ats">
+            <i class="bi bi-shield-check"></i> Minimalist ATS
+        </button>
+        <button type="button" class="template-btn" data-template="tech">
+            <i class="bi bi-cpu"></i> Tech Sleek
+        </button>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-sm btn-link text-muted p-0 text-decoration-none" id="btnOpenVerbsModal">
+            <i class="bi bi-lightning-charge"></i> Strong Action Verbs
+        </button>
+        <span class="text-muted">|</span>
+        <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" id="btnResetForm">
+            <i class="bi bi-trash3"></i> Reset
+        </button>
+    </div>
+</div>
+
+<!-- Main Builder Workspace -->
+<div class="builder-workspace">
+    <!-- LEFT: Input Controls Column -->
+    <div class="builder-controls-column">
+        <!-- 1. Contact & Header Information -->
+        <div class="builder-card">
+            <div class="builder-card-header">
+                <h3 class="builder-card-title">
+                    <i class="bi bi-person-badge"></i> Contact &amp; Personal Info
+                </h3>
+            </div>
+            <div class="builder-card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Full Name *</label>
+                        <input type="text" class="form-control" id="inputName" placeholder="e.g. Omkar More" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Target Job Title *</label>
+                        <input type="text" class="form-control" id="inputTitle" placeholder="e.g. Senior Full Stack Engineer" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Email Address *</label>
+                        <input type="email" class="form-control" id="inputEmail" placeholder="omkar@example.com">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Phone Number</label>
+                        <input type="text" class="form-control" id="inputPhone" placeholder="+91 98765 43210">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Location</label>
+                        <input type="text" class="form-control" id="inputLocation" placeholder="Pune, India">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">LinkedIn URL / Username</label>
+                        <input type="text" class="form-control" id="inputLinkedin" placeholder="linkedin.com/in/username">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">GitHub / Portfolio</label>
+                        <input type="text" class="form-control" id="inputGithub" placeholder="github.com/username">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Personal Website</label>
+                        <input type="text" class="form-control" id="inputWebsite" placeholder="portfolio.dev">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Professional Summary -->
+        <div class="builder-card">
+            <div class="builder-card-header">
+                <h3 class="builder-card-title">
+                    <i class="bi bi-card-text"></i> Professional Summary
+                </h3>
+                <button type="button" class="ai-assist-btn" id="btnOpenSummaryAIModal">
+                    <i class="bi bi-stars"></i> ✨ AI Generate Summary
+                </button>
+            </div>
+            <div class="builder-card-body">
+                <textarea class="form-control" id="inputSummary" rows="4" placeholder="Briefly describe your years of experience, core technical specialties, and primary career achievements..."></textarea>
+                <div class="form-text small">Pro Tip: Keep to 3–4 punchy sentences highlighting your core competencies and measurable impact.</div>
+            </div>
+        </div>
+
+        <!-- 3. Work Experience -->
+        <div class="builder-card">
+            <div class="builder-card-header">
+                <h3 class="builder-card-title">
+                    <i class="bi bi-briefcase"></i> Work Experience
+                </h3>
+                <span class="small text-muted" id="expCount">0 positions</span>
+            </div>
+            <div class="builder-card-body">
+                <div id="experienceContainer">
+                    <!-- Dynamic Experience Items -->
+                </div>
+                <button type="button" class="btn-add-repeater" id="btnAddExperience">
+                    <i class="bi bi-plus-circle"></i> + Add Work Experience
+                </button>
+            </div>
+        </div>
+
+        <!-- 4. Education -->
+        <div class="builder-card">
+            <div class="builder-card-header">
+                <h3 class="builder-card-title">
+                    <i class="bi bi-mortarboard"></i> Education
+                </h3>
+                <span class="small text-muted" id="eduCount">0 degrees</span>
+            </div>
+            <div class="builder-card-body">
+                <div id="educationContainer">
+                    <!-- Dynamic Education Items -->
+                </div>
+                <button type="button" class="btn-add-repeater" id="btnAddEducation">
+                    <i class="bi bi-plus-circle"></i> + Add Education
+                </button>
+            </div>
+        </div>
+
+        <!-- 5. Projects -->
+        <div class="builder-card">
+            <div class="builder-card-header">
+                <h3 class="builder-card-title">
+                    <i class="bi bi-kanban"></i> Key Projects
+                </h3>
+                <span class="small text-muted" id="projCount">0 projects</span>
+            </div>
+            <div class="builder-card-body">
+                <div id="projectsContainer">
+                    <!-- Dynamic Project Items -->
+                </div>
+                <button type="button" class="btn-add-repeater" id="btnAddProject">
+                    <i class="bi bi-plus-circle"></i> + Add Project
+                </button>
+            </div>
+        </div>
+
+        <!-- 6. Skills -->
+        <div class="builder-card">
+            <div class="builder-card-header">
+                <h3 class="builder-card-title">
+                    <i class="bi bi-tools"></i> Skills &amp; Competencies
+                </h3>
+            </div>
+            <div class="builder-card-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Technical Skills (Comma separated)</label>
+                    <textarea class="form-control" id="inputTechSkills" rows="2" placeholder="Python, Flask, JavaScript, React, Docker, PostgreSQL, REST APIs, Git..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Frameworks &amp; Developer Tools (Comma separated)</label>
+                    <input type="text" class="form-control" id="inputToolsSkills" placeholder="AWS, Docker, CI/CD, Postman, Linux, VS Code, pytest...">
+                </div>
+                <div>
+                    <label class="form-label small fw-bold">Soft / Professional Skills (Comma separated)</label>
+                    <input type="text" class="form-control" id="inputSoftSkills" placeholder="Problem Solving, Agile Collaboration, Technical Writing, Team Leadership...">
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Certifications & Honors -->
+        <div class="builder-card">
+            <div class="builder-card-header">
+                <h3 class="builder-card-title">
+                    <i class="bi bi-award"></i> Certifications &amp; Honors
+                </h3>
+                <span class="small text-muted" id="certCount">0 entries</span>
+            </div>
+            <div class="builder-card-body">
+                <div id="certificationsContainer">
+                    <!-- Dynamic Cert Items -->
+                </div>
+                <button type="button" class="btn-add-repeater" id="btnAddCertification">
+                    <i class="bi bi-plus-circle"></i> + Add Certification
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Live A4 Preview Sheet Column -->
+    <div class="builder-preview-column">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="small fw-bold text-muted text-uppercase" style="letter-spacing:0.05em;">
+                <i class="bi bi-eye"></i> Live A4 Print Preview
+            </div>
+            <div class="small text-muted" id="previewWordCount">0 words</div>
+        </div>
+
+        <div class="preview-sheet-wrapper">
+            <!-- The Printable A4 Sheet -->
+            <div class="resume-paper template-modern" id="resumePaper">
+                <!-- Header -->
+                <div class="resume-header">
+                    <h1 class="candidate-name" id="prevName">YOUR NAME</h1>
+                    <div class="candidate-title" id="prevTitle">Target Professional Title</div>
+                    <div class="contact-row" id="prevContactRow">
+                        <span id="prevEmail">email@example.com</span>
+                        <span id="prevPhone">+1 234 567 890</span>
+                        <span id="prevLocation">City, Country</span>
+                        <span id="prevLinkedin"></span>
+                        <span id="prevGithub"></span>
+                    </div>
+                </div>
+
+                <!-- Summary Section -->
+                <div id="prevSummarySection">
+                    <div class="resume-section-title">Professional Summary</div>
+                    <p class="mb-0" id="prevSummaryText" style="white-space: pre-line;">Results-driven professional with a proven track record of engineering scalable solutions and delivering high-impact business outcomes.</p>
+                </div>
+
+                <!-- Experience Section -->
+                <div id="prevExperienceSection">
+                    <div class="resume-section-title">Work Experience</div>
+                    <div id="prevExperienceList"></div>
+                </div>
+
+                <!-- Projects Section -->
+                <div id="prevProjectsSection">
+                    <div class="resume-section-title">Key Projects</div>
+                    <div id="prevProjectsList"></div>
+                </div>
+
+                <!-- Education Section -->
+                <div id="prevEducationSection">
+                    <div class="resume-section-title">Education</div>
+                    <div id="prevEducationList"></div>
+                </div>
+
+                <!-- Skills Section -->
+                <div id="prevSkillsSection">
+                    <div class="resume-section-title">Technical Competencies</div>
+                    <div id="prevSkillsContent"></div>
+                </div>
+
+                <!-- Certifications Section -->
+                <div id="prevCertificationsSection">
+                    <div class="resume-section-title">Certifications &amp; Achievements</div>
+                    <div id="prevCertificationsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODALS -->
+<!-- ========================================================================= -->
+
+<!-- 1. AI Summary Generator Modal -->
+<div class="modal fade" id="modalAISummary" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-stars text-primary" style="color:var(--sv-terracotta) !important;"></i> ✨ AI Summary Generator</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Years of Experience</label>
+                    <input type="text" class="form-control" id="summaryModalExp" placeholder="e.g. 3+ years in backend engineering">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Primary Skills to Emphasize</label>
+                    <input type="text" class="form-control" id="summaryModalSkills" placeholder="e.g. Python, Flask, Microservices, Cloud">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Special Highlights / Notes (Optional)</label>
+                    <textarea class="form-control" id="summaryModalNotes" rows="2" placeholder="e.g. Led a team of 4 engineers; scaled API to 10k users"></textarea>
+                </div>
+
+                <button type="button" class="btn-cp-primary w-100 justify-content-center" id="btnTriggerAISummary">
+                    <span id="summaryBtnText"><i class="bi bi-lightning-charge-fill"></i> Generate 3 Tailored Summaries</span>
+                    <span id="summarySpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                </button>
+
+                <!-- AI Generated Options -->
+                <div class="mt-4 d-none" id="summaryResultsContainer">
+                    <h6 class="fw-bold mb-3">Select a Tailored Summary:</h6>
+
+                    <div class="card mb-3 border p-3" style="border-radius:10px;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge bg-primary" style="background:var(--sv-terracotta) !important;">Option A: Impact &amp; Metrics Driven</span>
+                            <button type="button" class="btn btn-sm btn-outline-success btn-adopt-summary" data-target="impact">
+                                <i class="bi bi-check2"></i> Adopt This
+                            </button>
+                        </div>
+                        <p class="small mb-0 text-muted" id="summaryOptImpact"></p>
+                    </div>
+
+                    <div class="card mb-3 border p-3" style="border-radius:10px;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge bg-secondary">Option B: Technical Specialist Focus</span>
+                            <button type="button" class="btn btn-sm btn-outline-success btn-adopt-summary" data-target="technical">
+                                <i class="bi bi-check2"></i> Adopt This
+                            </button>
+                        </div>
+                        <p class="small mb-0 text-muted" id="summaryOptTech"></p>
+                    </div>
+
+                    <div class="card border p-3" style="border-radius:10px;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge bg-dark">Option C: Concise (1-Page Resume)</span>
+                            <button type="button" class="btn btn-sm btn-outline-success btn-adopt-summary" data-target="concise">
+                                <i class="bi bi-check2"></i> Adopt This
+                            </button>
+                        </div>
+                        <p class="small mb-0 text-muted" id="summaryOptConcise"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. AI Bullet Improver Modal -->
+<div class="modal fade" id="modalAIBullet" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-magic text-primary" style="color:var(--sv-terracotta) !important;"></i> ✨ AI Bullet Point Enhancer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Current Draft Bullet Point</label>
+                    <textarea class="form-control" id="bulletModalInput" rows="2" readonly></textarea>
+                </div>
+
+                <div class="d-flex gap-2 mb-3">
+                    <button type="button" class="btn btn-sm btn-outline-secondary active btn-bullet-focus" data-focus="impact">
+                        <i class="bi bi-graph-up-arrow"></i> Quantify Impact (XYZ Formula)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-bullet-focus" data-focus="leadership">
+                        <i class="bi bi-people"></i> Leadership &amp; Ownership
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-bullet-focus" data-focus="technical">
+                        <i class="bi bi-code-square"></i> Deep Technical Craft
+                    </button>
+                </div>
+
+                <button type="button" class="btn-cp-primary w-100 justify-content-center" id="btnTriggerAIBullet">
+                    <span id="bulletBtnText"><i class="bi bi-lightning-charge-fill"></i> Optimize with Groq AI</span>
+                    <span id="bulletSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                </button>
+
+                <!-- Result Box -->
+                <div class="mt-4 d-none" id="bulletResultBox">
+                    <div class="alert alert-success d-flex flex-column gap-2" style="border-radius:12px;">
+                        <div class="fw-bold text-success d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill"></i> Recommended Improvement:
+                            <span class="badge bg-success ms-auto" id="bulletActionVerbUsed"></span>
+                        </div>
+                        <div class="p-2 bg-white rounded border text-dark fw-medium" id="bulletResultText"></div>
+                        <div class="small text-muted" id="bulletResultReason"></div>
+                    </div>
+
+                    <div class="alert alert-light border mt-2">
+                        <div class="small fw-bold text-muted mb-1">Alternative Variation:</div>
+                        <div class="small text-dark" id="bulletResultAlt"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Keep Original</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="btnAdoptAltBullet">Adopt Alternative</button>
+                        <button type="button" class="btn-cp-primary btn-sm" id="btnAdoptMainBullet">Apply to Resume</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Strong Action Verbs Modal -->
+<div class="modal fade" id="modalActionVerbs" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-lightning-charge-fill text-warning"></i> ATS High-Impact Action Verbs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="actionVerbsModalBody">
+                <!-- Loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4. Save Resume Modal (SQLite) -->
+<div class="modal fade" id="modalSaveResume" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-cloud-arrow-up text-primary" style="color:var(--sv-terracotta) !important;"></i> Save Resume to Database</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Resume Document Title *</label>
+                    <input type="text" class="form-control" id="saveResumeTitle" placeholder="e.g. Full Stack Engineer - 2026">
+                    <div class="form-text small">Give your resume a name so you can easily reload or update it anytime.</div>
+                </div>
+                <div class="alert alert-info small py-2 mb-0" style="border-radius:8px;">
+                    <i class="bi bi-database-check"></i> Resumes are securely saved locally to your Skillverse SQLite database.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-cp-primary btn-sm px-4" id="btnConfirmSave">Save Resume</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 5. Saved Resumes List Modal (SQLite) -->
+<div class="modal fade" id="modalSavedList" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-folder2-open text-primary" style="color:var(--sv-terracotta) !important;"></i> My Saved Resumes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="savedResumesListContainer">
+                    <div class="text-center py-4 text-muted">
+                        <span class="spinner-border spinner-border-sm me-2"></span> Loading saved resumes...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container for Notifications -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080">
+    <div id="builderToast" class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius:10px;">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMessage">Action completed successfully.</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Global Resume State
+    let currentResumeId = null;
+    let currentTemplate = 'modern';
+    let currentBulletTarget = null;
+    let bulletFocusType = 'impact';
+
+    let resumeData = {
+        name: "Omkar More",
+        title: "Senior Full Stack Engineer",
+        email: "omkar.more@example.com",
+        phone: "+91 98765 43210",
+        location: "Pune, India",
+        linkedin: "linkedin.com/in/omkarmore",
+        github: "github.com/omkarrr-55",
+        website: "omkarmore.dev",
+        summary: "Results-driven Senior Full Stack Engineer with 4+ years of hands-on experience architecting scalable web applications, designing RESTful APIs, and implementing high-speed AI inference pipelines with Flask, Docker, and cloud services.",
+        experiences: [
+            {
+                id: 1,
+                company: "Skillverse Technologies",
+                role: "Senior Software Engineer",
+                location: "Pune, India",
+                startDate: "2024",
+                endDate: "Present",
+                current: true,
+                bullets: [
+                    "Architected high-throughput AI interview generation engine utilizing Groq Cloud LLMs and Flask, decreasing average candidate response latency by 35%.",
+                    "Engineered modular multi-page SaaS dashboard architecture with automated ATS parseability auditing and client-side vector PDF report generation."
+                ]
+            },
+            {
+                id: 2,
+                company: "Apex Digital Solutions",
+                role: "Full Stack Developer",
+                location: "Mumbai, India",
+                startDate: "2022",
+                endDate: "2024",
+                current: false,
+                bullets: [
+                    "Developed and maintained 15+ customer-facing microservices using Python, PostgreSQL, and Docker with 99.9% operational uptime.",
+                    "Optimized SQL database query performance and index coverage, reducing p95 database query latency by 45%."
+                ]
+            }
+        ],
+        education: [
+            {
+                id: 1,
+                school: "Vishwakarma Institute of Information Technology",
+                degree: "Bachelor of Technology",
+                field: "Computer Engineering",
+                location: "Pune, India",
+                year: "2022",
+                details: "Graduated with First Class Distinction (CGPA: 8.8/10.0)"
+            }
+        ],
+        projects: [
+            {
+                id: 1,
+                title: "Skillverse Career Intelligence Platform",
+                tech: "Python, Flask, Groq API, SQLite, Docker, Bootstrap 5",
+                link: "https://github.com/omkarrr-55/AI-Interview-Bot",
+                bullets: [
+                    "Engineered complete career development SaaS suite integrating ATS resume auditing, dynamic interview question generation, and live resume building.",
+                    "Implemented resilient multi-model LLM fallback cascade and local SQLite persistence, guaranteeing seamless offline-friendly operation."
+                ]
+            }
+        ],
+        skills: {
+            technical: "Python, Flask, JavaScript, REST APIs, SQL, Docker, Git, CI/CD, Microservices, HTML5/CSS3",
+            tools: "Postman, Linux, VS Code, pytest, PyPDF2, python-docx, NLTK",
+            soft: "Agile Development, Problem Solving, Cross-Functional Leadership, Technical Documentation"
+        },
+        certifications: [
+            {
+                id: 1,
+                name: "AWS Certified Solutions Architect – Associate",
+                issuer: "Amazon Web Services",
+                year: "2024"
+            }
+        ]
+    };
+
+    // Initialize Toast
+    const toastEl = document.getElementById('builderToast');
+    const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+    function showNotification(msg, isSuccess = true) {
+        document.getElementById('toastMessage').innerText = msg;
+        toastEl.className = `toast align-items-center text-white border-0 ${isSuccess ? 'bg-success' : 'bg-danger'}`;
+        toast.show();
+    }
+
+    // -------------------------------------------------------------------------
+    // Sync Form Inputs <-> State & Live Preview
+    // -------------------------------------------------------------------------
+    function populateFormFromState() {
+        document.getElementById('inputName').value = resumeData.name || '';
+        document.getElementById('inputTitle').value = resumeData.title || '';
+        document.getElementById('inputEmail').value = resumeData.email || '';
+        document.getElementById('inputPhone').value = resumeData.phone || '';
+        document.getElementById('inputLocation').value = resumeData.location || '';
+        document.getElementById('inputLinkedin').value = resumeData.linkedin || '';
+        document.getElementById('inputGithub').value = resumeData.github || '';
+        document.getElementById('inputWebsite').value = resumeData.website || '';
+        document.getElementById('inputSummary').value = resumeData.summary || '';
+
+        document.getElementById('inputTechSkills').value = resumeData.skills.technical || '';
+        document.getElementById('inputToolsSkills').value = resumeData.skills.tools || '';
+        document.getElementById('inputSoftSkills').value = resumeData.skills.soft || '';
+
+        renderExperienceForm();
+        renderEducationForm();
+        renderProjectsForm();
+        renderCertificationsForm();
+
+        updateLivePreview();
+    }
+
+    function updateLivePreview() {
+        // Read simple inputs
+        resumeData.name = document.getElementById('inputName').value;
+        resumeData.title = document.getElementById('inputTitle').value;
+        resumeData.email = document.getElementById('inputEmail').value;
+        resumeData.phone = document.getElementById('inputPhone').value;
+        resumeData.location = document.getElementById('inputLocation').value;
+        resumeData.linkedin = document.getElementById('inputLinkedin').value;
+        resumeData.github = document.getElementById('inputGithub').value;
+        resumeData.website = document.getElementById('inputWebsite').value;
+        resumeData.summary = document.getElementById('inputSummary').value;
+
+        resumeData.skills.technical = document.getElementById('inputTechSkills').value;
+        resumeData.skills.tools = document.getElementById('inputToolsSkills').value;
+        resumeData.skills.soft = document.getElementById('inputSoftSkills').value;
+
+        // Header
+        document.getElementById('prevName').innerText = resumeData.name || 'YOUR NAME';
+        document.getElementById('prevTitle').innerText = resumeData.title || 'Professional Title';
+
+        const contactRow = document.getElementById('prevContactRow');
+        let contactHtml = '';
+        if (resumeData.email) contactHtml += `<span>${resumeData.email}</span>`;
+        if (resumeData.phone) contactHtml += `<span>${resumeData.phone}</span>`;
+        if (resumeData.location) contactHtml += `<span>${resumeData.location}</span>`;
+        if (resumeData.linkedin) contactHtml += `<span>${resumeData.linkedin}</span>`;
+        if (resumeData.github) contactHtml += `<span>${resumeData.github}</span>`;
+        if (resumeData.website) contactHtml += `<span>${resumeData.website}</span>`;
+        contactRow.innerHTML = contactHtml;
+
+        // Summary
+        const summarySec = document.getElementById('prevSummarySection');
+        if (resumeData.summary.trim()) {
+            summarySec.style.display = 'block';
+            document.getElementById('prevSummaryText').innerText = resumeData.summary;
+        } else {
+            summarySec.style.display = 'none';
+        }
+
+        // Experience Preview
+        const expSec = document.getElementById('prevExperienceSection');
+        const expList = document.getElementById('prevExperienceList');
+        if (resumeData.experiences.length > 0) {
+            expSec.style.display = 'block';
+            let expHtml = '';
+            resumeData.experiences.forEach(exp => {
+                const dateStr = `${exp.startDate || ''} – ${exp.current ? 'Present' : (exp.endDate || '')}`;
+                expHtml += `
+                    <div class="resume-entry">
+                        <div class="resume-entry-top">
+                            <span>${exp.company || 'Company Name'}</span>
+                            <span>${dateStr}</span>
+                        </div>
+                        <div class="resume-entry-sub">
+                            <span>${exp.role || 'Job Role'}</span>
+                            <span>${exp.location || ''}</span>
+                        </div>
+                        <ul class="resume-bullets">
+                            ${(exp.bullets || []).map(b => b.trim() ? `<li>${b}</li>` : '').join('')}
+                        </ul>
+                    </div>
+                `;
+            });
+            expList.innerHTML = expHtml;
+        } else {
+            expSec.style.display = 'none';
+        }
+
+        // Projects Preview
+        const projSec = document.getElementById('prevProjectsSection');
+        const projList = document.getElementById('prevProjectsList');
+        if (resumeData.projects.length > 0) {
+            projSec.style.display = 'block';
+            let projHtml = '';
+            resumeData.projects.forEach(p => {
+                projHtml += `
+                    <div class="resume-entry">
+                        <div class="resume-entry-top">
+                            <span>${p.title || 'Project Name'}</span>
+                            ${p.link ? `<span style="font-weight:normal; font-size:8.5pt;">${p.link}</span>` : ''}
+                        </div>
+                        ${p.tech ? `<div class="resume-entry-sub"><span>Tech Stack: ${p.tech}</span></div>` : ''}
+                        <ul class="resume-bullets">
+                            ${(p.bullets || []).map(b => b.trim() ? `<li>${b}</li>` : '').join('')}
+                        </ul>
+                    </div>
+                `;
+            });
+            projList.innerHTML = projHtml;
+        } else {
+            projSec.style.display = 'none';
+        }
+
+        // Education Preview
+        const eduSec = document.getElementById('prevEducationSection');
+        const eduList = document.getElementById('prevEducationList');
+        if (resumeData.education.length > 0) {
+            eduSec.style.display = 'block';
+            let eduHtml = '';
+            resumeData.education.forEach(e => {
+                const degreeStr = [e.degree, e.field].filter(Boolean).join(' in ');
+                eduHtml += `
+                    <div class="resume-entry">
+                        <div class="resume-entry-top">
+                            <span>${e.school || 'School / University'}</span>
+                            <span>${e.year || ''}</span>
+                        </div>
+                        <div class="resume-entry-sub">
+                            <span>${degreeStr || 'Degree'}</span>
+                            <span>${e.location || ''}</span>
+                        </div>
+                        ${e.details ? `<div style="font-size:8.8pt; color:#475569;">${e.details}</div>` : ''}
+                    </div>
+                `;
+            });
+            eduList.innerHTML = eduHtml;
+        } else {
+            eduSec.style.display = 'none';
+        }
+
+        // Skills Preview
+        const skillsSec = document.getElementById('prevSkillsSection');
+        const skillsContent = document.getElementById('prevSkillsContent');
+        let hasSkills = resumeData.skills.technical || resumeData.skills.tools || resumeData.skills.soft;
+        if (hasSkills) {
+            skillsSec.style.display = 'block';
+            let sHtml = '';
+            if (resumeData.skills.technical) {
+                sHtml += `<div style="font-size:9pt; margin-bottom:4px;"><strong>Languages &amp; Core:</strong> ${resumeData.skills.technical}</div>`;
+            }
+            if (resumeData.skills.tools) {
+                sHtml += `<div style="font-size:9pt; margin-bottom:4px;"><strong>Frameworks &amp; Tools:</strong> ${resumeData.skills.tools}</div>`;
+            }
+            if (resumeData.skills.soft) {
+                sHtml += `<div style="font-size:9pt;"><strong>Professional Competencies:</strong> ${resumeData.skills.soft}</div>`;
+            }
+            skillsContent.innerHTML = sHtml;
+        } else {
+            skillsSec.style.display = 'none';
+        }
+
+        // Certifications Preview
+        const certSec = document.getElementById('prevCertificationsSection');
+        const certList = document.getElementById('prevCertificationsList');
+        if (resumeData.certifications.length > 0) {
+            certSec.style.display = 'block';
+            let cHtml = '';
+            resumeData.certifications.forEach(c => {
+                cHtml += `
+                    <div class="resume-entry" style="margin-bottom:4px;">
+                        <div class="resume-entry-top" style="font-size:9pt;">
+                            <span>${c.name || 'Certification Name'} ${c.issuer ? `&bull; <span style="font-weight:normal;">${c.issuer}</span>` : ''}</span>
+                            <span>${c.year || ''}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            certList.innerHTML = cHtml;
+        } else {
+            certSec.style.display = 'none';
+        }
+
+        // Word count
+        const text = document.getElementById('resumePaper').innerText || '';
+        const words = text.trim().split(/\s+/).filter(Boolean).length;
+        document.getElementById('previewWordCount').innerText = `${words} words`;
+
+        // Save draft locally
+        try {
+            localStorage.setItem('skillverse_resume_draft', JSON.stringify(resumeData));
+        } catch (e) {}
+    }
+
+    // Attach listeners to static inputs
+    ['inputName', 'inputTitle', 'inputEmail', 'inputPhone', 'inputLocation', 'inputLinkedin', 'inputGithub', 'inputWebsite', 'inputSummary', 'inputTechSkills', 'inputToolsSkills', 'inputSoftSkills'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateLivePreview);
+    });
+
+    // -------------------------------------------------------------------------
+    // Repeaters: Work Experience
+    // -------------------------------------------------------------------------
+    function renderExperienceForm() {
+        const container = document.getElementById('experienceContainer');
+        container.innerHTML = '';
+        document.getElementById('expCount').innerText = `${resumeData.experiences.length} positions`;
+
+        resumeData.experiences.forEach((exp, idx) => {
+            const item = document.createElement('div');
+            item.className = 'repeater-item';
+            item.innerHTML = `
+                <div class="repeater-item-header">
+                    <span class="repeater-item-title">#${idx + 1} ${exp.company || 'New Position'}</span>
+                    <button type="button" class="btn-remove-item" onclick="removeExperience(${exp.id})">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control form-control-sm" placeholder="Company Name" value="${exp.company || ''}" oninput="updateExpField(${exp.id}, 'company', this.value)">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control form-control-sm" placeholder="Job Title / Role" value="${exp.role || ''}" oninput="updateExpField(${exp.id}, 'role', this.value)">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control form-control-sm" placeholder="Location" value="${exp.location || ''}" oninput="updateExpField(${exp.id}, 'location', this.value)">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control form-control-sm" placeholder="Start Date (e.g. 2023)" value="${exp.startDate || ''}" oninput="updateExpField(${exp.id}, 'startDate', this.value)">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control form-control-sm" placeholder="End Date" value="${exp.endDate || ''}" ${exp.current ? 'disabled' : ''} id="expEnd_${exp.id}" oninput="updateExpField(${exp.id}, 'endDate', this.value)">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-center">
+                        <div class="form-check small">
+                            <input class="form-check-input" type="checkbox" ${exp.current ? 'checked' : ''} id="expCurr_${exp.id}" onchange="toggleExpCurrent(${exp.id}, this.checked)">
+                            <label class="form-check-label" for="expCurr_${exp.id}">Present</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-2">
+                    <label class="form-label small fw-bold mb-1">Key Achievements &amp; Bullets:</label>
+                    <div id="expBulletsContainer_${exp.id}">
+                        ${(exp.bullets || []).map((b, bIdx) => `
+                            <div class="input-group input-group-sm mb-1">
+                                <span class="input-group-text">&bull;</span>
+                                <input type="text" class="form-control" value="${b}" oninput="updateExpBullet(${exp.id}, ${bIdx}, this.value)">
+                                <button type="button" class="btn btn-outline-secondary" title="Polish with AI" onclick="openAIBulletModal('exp', ${exp.id}, ${bIdx})">
+                                    <i class="bi bi-stars text-primary" style="color:var(--sv-terracotta) !important;"></i> Polish
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="removeExpBullet(${exp.id}, ${bIdx})">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none small mt-1" onclick="addExpBullet(${exp.id})">
+                        <i class="bi bi-plus"></i> Add Bullet Point
+                    </button>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    window.updateExpField = (id, field, val) => {
+        const item = resumeData.experiences.find(x => x.id === id);
+        if (item) { item[field] = val; updateLivePreview(); }
+    };
+    window.toggleExpCurrent = (id, checked) => {
+        const item = resumeData.experiences.find(x => x.id === id);
+        if (item) {
+            item.current = checked;
+            const endInput = document.getElementById(`expEnd_${id}`);
+            if (endInput) endInput.disabled = checked;
+            updateLivePreview();
+        }
+    };
+    window.updateExpBullet = (id, bIdx, val) => {
+        const item = resumeData.experiences.find(x => x.id === id);
+        if (item && item.bullets) { item.bullets[bIdx] = val; updateLivePreview(); }
+    };
+    window.addExpBullet = (id) => {
+        const item = resumeData.experiences.find(x => x.id === id);
+        if (item) {
+            if (!item.bullets) item.bullets = [];
+            item.bullets.push("Spearheaded project initiative, optimizing team deliverable turnaround by [X%].");
+            renderExperienceForm();
+            updateLivePreview();
+        }
+    };
+    window.removeExpBullet = (id, bIdx) => {
+        const item = resumeData.experiences.find(x => x.id === id);
+        if (item && item.bullets) {
+            item.bullets.splice(bIdx, 1);
+            renderExperienceForm();
+            updateLivePreview();
+        }
+    };
+    window.removeExperience = (id) => {
+        resumeData.experiences = resumeData.experiences.filter(x => x.id !== id);
+        renderExperienceForm();
+        updateLivePreview();
+    };
+    document.getElementById('btnAddExperience').addEventListener('click', () => {
+        const newId = Date.now();
+        resumeData.experiences.push({
+            id: newId,
+            company: "Company Name",
+            role: "Software Engineer",
+            location: "Location",
+            startDate: "2023",
+            endDate: "Present",
+            current: true,
+            bullets: [
+                "Spearheaded development of core software features, improving system performance and reliability."
+            ]
+        });
+        renderExperienceForm();
+        updateLivePreview();
+    });
+
+    // -------------------------------------------------------------------------
+    // Repeaters: Education
+    // -------------------------------------------------------------------------
+    function renderEducationForm() {
+        const container = document.getElementById('educationContainer');
+        container.innerHTML = '';
+        document.getElementById('eduCount').innerText = `${resumeData.education.length} degrees`;
+
+        resumeData.education.forEach((edu, idx) => {
+            const item = document.createElement('div');
+            item.className = 'repeater-item';
+            item.innerHTML = `
+                <div class="repeater-item-header">
+                    <span class="repeater-item-title">#${idx + 1} ${edu.school || 'Education'}</span>
+                    <button type="button" class="btn-remove-item" onclick="removeEducation(${edu.id})">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control form-control-sm" placeholder="School / University" value="${edu.school || ''}" oninput="updateEduField(${edu.id}, 'school', this.value)">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control form-control-sm" placeholder="Degree (e.g. B.Tech / B.S.)" value="${edu.degree || ''}" oninput="updateEduField(${edu.id}, 'degree', this.value)">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control form-control-sm" placeholder="Field of Study (e.g. Computer Science)" value="${edu.field || ''}" oninput="updateEduField(${edu.id}, 'field', this.value)">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control form-control-sm" placeholder="Grad Year (e.g. 2024)" value="${edu.year || ''}" oninput="updateEduField(${edu.id}, 'year', this.value)">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control form-control-sm" placeholder="Location" value="${edu.location || ''}" oninput="updateEduField(${edu.id}, 'location', this.value)">
+                    </div>
+                    <div class="col-12">
+                        <input type="text" class="form-control form-control-sm" placeholder="Honors / GPA / Distinctions (Optional)" value="${edu.details || ''}" oninput="updateEduField(${edu.id}, 'details', this.value)">
+                    </div>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    window.updateEduField = (id, field, val) => {
+        const item = resumeData.education.find(x => x.id === id);
+        if (item) { item[field] = val; updateLivePreview(); }
+    };
+    window.removeEducation = (id) => {
+        resumeData.education = resumeData.education.filter(x => x.id !== id);
+        renderEducationForm();
+        updateLivePreview();
+    };
+    document.getElementById('btnAddEducation').addEventListener('click', () => {
+        resumeData.education.push({
+            id: Date.now(),
+            school: "University / College",
+            degree: "Bachelor of Science",
+            field: "Computer Science",
+            location: "City, Country",
+            year: "2024",
+            details: ""
+        });
+        renderEducationForm();
+        updateLivePreview();
+    });
+
+    // -------------------------------------------------------------------------
+    // Repeaters: Projects
+    // -------------------------------------------------------------------------
+    function renderProjectsForm() {
+        const container = document.getElementById('projectsContainer');
+        container.innerHTML = '';
+        document.getElementById('projCount').innerText = `${resumeData.projects.length} projects`;
+
+        resumeData.projects.forEach((proj, idx) => {
+            const item = document.createElement('div');
+            item.className = 'repeater-item';
+            item.innerHTML = `
+                <div class="repeater-item-header">
+                    <span class="repeater-item-title">#${idx + 1} ${proj.title || 'Project'}</span>
+                    <button type="button" class="btn-remove-item" onclick="removeProject(${proj.id})">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control form-control-sm" placeholder="Project Title" value="${proj.title || ''}" oninput="updateProjField(${proj.id}, 'title', this.value)">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control form-control-sm" placeholder="Tech Stack (e.g. Python, Docker)" value="${proj.tech || ''}" oninput="updateProjField(${proj.id}, 'tech', this.value)">
+                    </div>
+                    <div class="col-12">
+                        <input type="text" class="form-control form-control-sm" placeholder="Project Link / GitHub URL" value="${proj.link || ''}" oninput="updateProjField(${proj.id}, 'link', this.value)">
+                    </div>
+                </div>
+
+                <div class="mt-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label small fw-bold mb-0">Project Highlights:</label>
+                        <button type="button" class="ai-assist-btn" style="font-size:0.7rem;" onclick="generateAIProjectBullets(${proj.id})">
+                            <i class="bi bi-stars"></i> Auto-Generate with AI
+                        </button>
+                    </div>
+                    <div id="projBulletsContainer_${proj.id}">
+                        ${(proj.bullets || []).map((b, bIdx) => `
+                            <div class="input-group input-group-sm mb-1">
+                                <span class="input-group-text">&bull;</span>
+                                <input type="text" class="form-control" value="${b}" oninput="updateProjBullet(${proj.id}, ${bIdx}, this.value)">
+                                <button type="button" class="btn btn-outline-secondary" title="Polish with AI" onclick="openAIBulletModal('proj', ${proj.id}, ${bIdx})">
+                                    <i class="bi bi-stars text-primary" style="color:var(--sv-terracotta) !important;"></i> Polish
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="removeProjBullet(${proj.id}, ${bIdx})">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none small mt-1" onclick="addProjBullet(${proj.id})">
+                        <i class="bi bi-plus"></i> Add Bullet Point
+                    </button>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    window.updateProjField = (id, field, val) => {
+        const item = resumeData.projects.find(x => x.id === id);
+        if (item) { item[field] = val; updateLivePreview(); }
+    };
+    window.updateProjBullet = (id, bIdx, val) => {
+        const item = resumeData.projects.find(x => x.id === id);
+        if (item && item.bullets) { item.bullets[bIdx] = val; updateLivePreview(); }
+    };
+    window.addProjBullet = (id) => {
+        const item = resumeData.projects.find(x => x.id === id);
+        if (item) {
+            if (!item.bullets) item.bullets = [];
+            item.bullets.push("Engineered core platform functionality, ensuring high reliability and clean architecture.");
+            renderProjectsForm();
+            updateLivePreview();
+        }
+    };
+    window.removeProjBullet = (id, bIdx) => {
+        const item = resumeData.projects.find(x => x.id === id);
+        if (item && item.bullets) {
+            item.bullets.splice(bIdx, 1);
+            renderProjectsForm();
+            updateLivePreview();
+        }
+    };
+    window.removeProject = (id) => {
+        resumeData.projects = resumeData.projects.filter(x => x.id !== id);
+        renderProjectsForm();
+        updateLivePreview();
+    };
+    document.getElementById('btnAddProject').addEventListener('click', () => {
+        resumeData.projects.push({
+            id: Date.now(),
+            title: "Project Name",
+            tech: "Python, Flask, SQLite",
+            link: "",
+            bullets: [
+                "Architected application architecture, delivering scalable features and sub-200ms response times."
+            ]
+        });
+        renderProjectsForm();
+        updateLivePreview();
+    });
+
+    // -------------------------------------------------------------------------
+    // Repeaters: Certifications
+    // -------------------------------------------------------------------------
+    function renderCertificationsForm() {
+        const container = document.getElementById('certificationsContainer');
+        container.innerHTML = '';
+        document.getElementById('certCount').innerText = `${resumeData.certifications.length} entries`;
+
+        resumeData.certifications.forEach((c, idx) => {
+            const item = document.createElement('div');
+            item.className = 'repeater-item';
+            item.innerHTML = `
+                <div class="repeater-item-header">
+                    <span class="repeater-item-title">#${idx + 1} ${c.name || 'Certification'}</span>
+                    <button type="button" class="btn-remove-item" onclick="removeCert(${c.id})">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control form-control-sm" placeholder="Certification Name" value="${c.name || ''}" oninput="updateCertField(${c.id}, 'name', this.value)">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control form-control-sm" placeholder="Issuing Organization" value="${c.issuer || ''}" oninput="updateCertField(${c.id}, 'issuer', this.value)">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" class="form-control form-control-sm" placeholder="Year" value="${c.year || ''}" oninput="updateCertField(${c.id}, 'year', this.value)">
+                    </div>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    window.updateCertField = (id, field, val) => {
+        const item = resumeData.certifications.find(x => x.id === id);
+        if (item) { item[field] = val; updateLivePreview(); }
+    };
+    window.removeCert = (id) => {
+        resumeData.certifications = resumeData.certifications.filter(x => x.id !== id);
+        renderCertificationsForm();
+        updateLivePreview();
+    };
+    document.getElementById('btnAddCertification').addEventListener('click', () => {
+        resumeData.certifications.push({
+            id: Date.now(),
+            name: "Certification Title",
+            issuer: "Issuing Organization",
+            year: "2024"
+        });
+        renderCertificationsForm();
+        updateLivePreview();
+    });
+
+    // -------------------------------------------------------------------------
+    // Template Switching Engine
+    // -------------------------------------------------------------------------
+    document.querySelectorAll('.template-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentTemplate = this.dataset.template;
+
+            const paper = document.getElementById('resumePaper');
+            paper.className = `resume-paper template-${currentTemplate}`;
+            showNotification(`Switched template to ${this.innerText.trim()}`);
+        });
+    });
+
+    // -------------------------------------------------------------------------
+    // AI Feature 1: Summary Generator
+    // -------------------------------------------------------------------------
+    const modalAISummary = new bootstrap.Modal(document.getElementById('modalAISummary'));
+    document.getElementById('btnOpenSummaryAIModal').addEventListener('click', () => {
+        document.getElementById('summaryModalExp').value = resumeData.experiences.length > 0 ? `${resumeData.experiences.length * 2}+ years` : '';
+        document.getElementById('summaryModalSkills').value = resumeData.skills.technical || '';
+        document.getElementById('summaryResultsContainer').classList.add('d-none');
+        modalAISummary.show();
+    });
+
+    document.getElementById('btnTriggerAISummary').addEventListener('click', async () => {
+        const btn = document.getElementById('btnTriggerAISummary');
+        const spinner = document.getElementById('summarySpinner');
+        const btnText = document.getElementById('summaryBtnText');
+
+        btn.disabled = true;
+        spinner.classList.remove('d-none');
+        btnText.innerText = "Generating with Groq AI...";
+
+        try {
+            const resp = await fetch('/api/resume-builder/generate-summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    role: resumeData.title,
+                    experience_years: document.getElementById('summaryModalExp').value,
+                    skills: document.getElementById('summaryModalSkills').value,
+                    raw_notes: document.getElementById('summaryModalNotes').value
+                })
+            });
+            const data = await resp.json();
+
+            if (data.status === 'success') {
+                document.getElementById('summaryOptImpact').innerText = data.result.impact || '';
+                document.getElementById('summaryOptTech').innerText = data.result.technical || '';
+                document.getElementById('summaryOptConcise').innerText = data.result.concise || '';
+                document.getElementById('summaryResultsContainer').classList.remove('d-none');
+            } else {
+                showNotification(data.message || "Failed to generate summaries", false);
+            }
+        } catch (err) {
+            showNotification("Network error contacting AI server", false);
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('d-none');
+            btnText.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> Generate 3 Tailored Summaries';
+        }
+    });
+
+    document.querySelectorAll('.btn-adopt-summary').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const target = this.dataset.target;
+            let text = "";
+            if (target === 'impact') text = document.getElementById('summaryOptImpact').innerText;
+            else if (target === 'technical') text = document.getElementById('summaryOptTech').innerText;
+            else text = document.getElementById('summaryOptConcise').innerText;
+
+            document.getElementById('inputSummary').value = text;
+            resumeData.summary = text;
+            updateLivePreview();
+            modalAISummary.hide();
+            showNotification("Adopted AI summary successfully!");
+        });
+    });
+
+    // -------------------------------------------------------------------------
+    // AI Feature 2: Bullet Point Optimizer
+    // -------------------------------------------------------------------------
+    const modalAIBullet = new bootstrap.Modal(document.getElementById('modalAIBullet'));
+    window.openAIBulletModal = (type, parentId, bulletIdx) => {
+        currentBulletTarget = { type, parentId, bulletIdx };
+        let bulletText = "";
+        if (type === 'exp') {
+            const exp = resumeData.experiences.find(x => x.id === parentId);
+            bulletText = exp ? exp.bullets[bulletIdx] : "";
+        } else {
+            const proj = resumeData.projects.find(x => x.id === parentId);
+            bulletText = proj ? proj.bullets[bulletIdx] : "";
+        }
+
+        document.getElementById('bulletModalInput').value = bulletText;
+        document.getElementById('bulletResultBox').classList.add('d-none');
+        modalAIBullet.show();
+    };
+
+    document.querySelectorAll('.btn-bullet-focus').forEach(b => {
+        b.addEventListener('click', function() {
+            document.querySelectorAll('.btn-bullet-focus').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            bulletFocusType = this.dataset.focus;
+        });
+    });
+
+    let currentImprovedBullet = "";
+    let currentAlternativeBullet = "";
+
+    document.getElementById('btnTriggerAIBullet').addEventListener('click', async () => {
+        const btn = document.getElementById('btnTriggerAIBullet');
+        const spinner = document.getElementById('bulletSpinner');
+        const btnText = document.getElementById('bulletBtnText');
+        const bulletVal = document.getElementById('bulletModalInput').value;
+
+        btn.disabled = true;
+        spinner.classList.remove('d-none');
+        btnText.innerText = "Enhancing with Groq AI...";
+
+        try {
+            const resp = await fetch('/api/resume-builder/improve-bullet', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bullet: bulletVal,
+                    role: resumeData.title,
+                    focus: bulletFocusType
+                })
+            });
+            const data = await resp.json();
+
+            if (data.status === 'success') {
+                currentImprovedBullet = data.result.improved_bullet;
+                currentAlternativeBullet = data.result.alternative_bullet || currentImprovedBullet;
+
+                document.getElementById('bulletResultText').innerText = currentImprovedBullet;
+                document.getElementById('bulletActionVerbUsed').innerText = `Action Verb: ${data.result.action_verb_used || 'Optimized'}`;
+                document.getElementById('bulletResultReason').innerText = data.result.key_improvements || '';
+                document.getElementById('bulletResultAlt').innerText = currentAlternativeBullet;
+                document.getElementById('bulletResultBox').classList.remove('d-none');
+            } else {
+                showNotification(data.message || "Failed to improve bullet", false);
+            }
+        } catch (err) {
+            showNotification("Network error contacting AI server", false);
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('d-none');
+            btnText.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> Optimize with Groq AI';
+        }
+    });
+
+    function applyBulletToTarget(newText) {
+        if (!currentBulletTarget) return;
+        const { type, parentId, bulletIdx } = currentBulletTarget;
+        if (type === 'exp') {
+            const exp = resumeData.experiences.find(x => x.id === parentId);
+            if (exp) exp.bullets[bulletIdx] = newText;
+            renderExperienceForm();
+        } else {
+            const proj = resumeData.projects.find(x => x.id === parentId);
+            if (proj) proj.bullets[bulletIdx] = newText;
+            renderProjectsForm();
+        }
+        updateLivePreview();
+        modalAIBullet.hide();
+        showNotification("Applied enhanced bullet to resume!");
+    }
+
+    document.getElementById('btnAdoptMainBullet').addEventListener('click', () => {
+        applyBulletToTarget(currentImprovedBullet);
+    });
+    document.getElementById('btnAdoptAltBullet').addEventListener('click', () => {
+        applyBulletToTarget(currentAlternativeBullet);
+    });
+
+    // -------------------------------------------------------------------------
+    // AI Feature 3: Project Bullets Auto-Generator
+    // -------------------------------------------------------------------------
+    window.generateAIProjectBullets = async (projId) => {
+        const proj = resumeData.projects.find(x => x.id === projId);
+        if (!proj) return;
+
+        showNotification("Generating project bullets with Groq AI...");
+        try {
+            const resp = await fetch('/api/resume-builder/generate-project-desc', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: proj.title,
+                    tech_stack: proj.tech,
+                    highlights: ""
+                })
+            });
+            const data = await resp.json();
+            if (data.status === 'success' && data.result.bullets) {
+                proj.bullets = data.result.bullets;
+                renderProjectsForm();
+                updateLivePreview();
+                showNotification("Project bullets generated successfully!");
+            } else {
+                showNotification(data.message || "Could not generate project bullets", false);
+            }
+        } catch (e) {
+            showNotification("Network error during project generation", false);
+        }
+    };
+
+    // -------------------------------------------------------------------------
+    // Action Verbs Modal
+    // -------------------------------------------------------------------------
+    const modalActionVerbs = new bootstrap.Modal(document.getElementById('modalActionVerbs'));
+    document.getElementById('btnOpenVerbsModal').addEventListener('click', async () => {
+        modalActionVerbs.show();
+        const body = document.getElementById('actionVerbsModalBody');
+        body.innerHTML = '<div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span> Loading verbs...</div>';
+        try {
+            const resp = await fetch('/api/resume-builder/suggest-verbs');
+            const data = await resp.json();
+            if (data.status === 'success') {
+                let html = '<div class="row g-3">';
+                for (const [category, verbs] of Object.entries(data.result)) {
+                    html += `
+                        <div class="col-md-6">
+                            <div class="card h-100 p-3 border">
+                                <h6 class="fw-bold text-dark mb-2">${category}</h6>
+                                <div class="d-flex flex-wrap gap-1">
+                                    ${verbs.map(v => `<span class="badge bg-light text-dark border p-2">${v}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                body.innerHTML = html;
+            }
+        } catch (e) {
+            body.innerHTML = '<div class="text-danger small">Failed to load action verbs list.</div>';
+        }
+    });
+
+    // -------------------------------------------------------------------------
+    // SQLite Persistence: Save & Load
+    // -------------------------------------------------------------------------
+    const modalSaveResume = new bootstrap.Modal(document.getElementById('modalSaveResume'));
+    const modalSavedList = new bootstrap.Modal(document.getElementById('modalSavedList'));
+
+    document.getElementById('btnSaveResumeModal').addEventListener('click', () => {
+        document.getElementById('saveResumeTitle').value = resumeData.title ? `${resumeData.name} - ${resumeData.title}` : "Software Engineer Resume";
+        modalSaveResume.show();
+    });
+
+    document.getElementById('btnConfirmSave').addEventListener('click', async () => {
+        const title = document.getElementById('saveResumeTitle').value.trim() || "Untitled Resume";
+        const btn = document.getElementById('btnConfirmSave');
+        btn.disabled = true;
+
+        try {
+            const resp = await fetch('/api/resume-builder/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: currentResumeId,
+                    title: title,
+                    template: currentTemplate,
+                    data: resumeData
+                })
+            });
+            const res = await resp.json();
+            if (res.status === 'success') {
+                currentResumeId = res.id;
+                modalSaveResume.hide();
+                showNotification(`Resume "${title}" saved to SQLite database!`);
+                refreshSavedCount();
+            } else {
+                showNotification(res.message || "Failed to save resume", false);
+            }
+        } catch (e) {
+            showNotification("Network error saving resume", false);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    async function refreshSavedCount() {
+        try {
+            const resp = await fetch('/api/resume-builder/list');
+            const data = await resp.json();
+            if (data.status === 'success') {
+                document.getElementById('savedCountBadge').innerText = data.resumes.length;
+            }
+        } catch (e) {}
+    }
+
+    document.getElementById('btnOpenSavedModal').addEventListener('click', async () => {
+        modalSavedList.show();
+        const container = document.getElementById('savedResumesListContainer');
+        container.innerHTML = '<div class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Loading saved resumes...</div>';
+
+        try {
+            const resp = await fetch('/api/resume-builder/list');
+            const data = await resp.json();
+            if (data.status === 'success' && data.resumes.length > 0) {
+                let html = '<div class="list-group">';
+                data.resumes.forEach(r => {
+                    html += `
+                        <div class="list-group-item d-flex justify-content-between align-items-center p-3">
+                            <div>
+                                <h6 class="fw-bold mb-1">${r.title}</h6>
+                                <div class="small text-muted">
+                                    Template: <span class="badge bg-light text-dark border text-uppercase">${r.template}</span>
+                                    &bull; Last modified: ${r.updated_at}
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadResumeById(${r.id})">
+                                    <i class="bi bi-box-arrow-in-down"></i> Load
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteResumeById(${r.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-folder-x fs-2 d-block mb-2"></i> No saved resumes found in database yet. Save your current resume!</div>';
+            }
+        } catch (e) {
+            container.innerHTML = '<div class="alert alert-danger">Error retrieving saved resumes.</div>';
+        }
+    });
+
+    window.loadResumeById = async (id) => {
+        try {
+            const resp = await fetch(`/api/resume-builder/${id}`);
+            const data = await resp.json();
+            if (data.status === 'success') {
+                currentResumeId = data.resume.id;
+                currentTemplate = data.resume.template || 'modern';
+                resumeData = data.resume.data;
+
+                // Select template button
+                document.querySelectorAll('.template-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.template === currentTemplate);
+                });
+                document.getElementById('resumePaper').className = `resume-paper template-${currentTemplate}`;
+
+                populateFormFromState();
+                modalSavedList.hide();
+                showNotification(`Loaded resume "${data.resume.title}"`);
+            }
+        } catch (e) {
+            showNotification("Failed to load resume", false);
+        }
+    };
+
+    window.deleteResumeById = async (id) => {
+        if (!confirm("Are you sure you want to delete this saved resume from the database?")) return;
+        try {
+            const resp = await fetch(`/api/resume-builder/${id}`, { method: 'DELETE' });
+            const data = await resp.json();
+            if (data.status === 'success') {
+                if (currentResumeId === id) currentResumeId = null;
+                showNotification("Resume deleted from database");
+                refreshSavedCount();
+                document.getElementById('btnOpenSavedModal').click();
+            }
+        } catch (e) {
+            showNotification("Failed to delete resume", false);
+        }
+    };
+
+    // -------------------------------------------------------------------------
+    // Reset Form
+    // -------------------------------------------------------------------------
+    document.getElementById('btnResetForm').addEventListener('click', () => {
+        if (!confirm("Reset all fields to blank template?")) return;
+        currentResumeId = null;
+        resumeData = {
+            name: "",
+            title: "",
+            email: "",
+            phone: "",
+            location: "",
+            linkedin: "",
+            github: "",
+            website: "",
+            summary: "",
+            experiences: [],
+            education: [],
+            projects: [],
+            skills: { technical: "", tools: "", soft: "" },
+            certifications: []
+        };
+        populateFormFromState();
+        showNotification("Resume reset to blank");
+    });
+
+    // -------------------------------------------------------------------------
+    // High-Fidelity PDF Export
+    // -------------------------------------------------------------------------
+    document.getElementById('btnDownloadPDF').addEventListener('click', () => {
+        const element = document.getElementById('resumePaper');
+        const filename = (resumeData.name ? resumeData.name.replace(/\s+/g, '_') : 'Skillverse') + '_Resume.pdf';
+
+        const opt = {
+            margin: [6, 6, 6, 6],
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2.5, useCORS: true, logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
+        showNotification("Generating your professional PDF resume...");
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            showNotification("PDF resume downloaded successfully!");
+        }).catch(err => {
+            console.error("html2pdf error, falling back to window.print():", err);
+            window.print();
+        });
+    });
+
+    // Initial load: check localStorage or populate initial state
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            const draft = localStorage.getItem('skillverse_resume_draft');
+            if (draft) {
+                const parsed = JSON.parse(draft);
+                if (parsed.name) resumeData = parsed;
+            }
+        } catch (e) {}
+
+        populateFormFromState();
+        refreshSavedCount();
+    });
+</script>
+{% endblock %}

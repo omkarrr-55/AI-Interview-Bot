@@ -1,0 +1,522 @@
+/* ==========================================================================
+   Skillverse AI Resume Builder Stylesheet
+   Warm Neutral & Terracotta Palette + 4 ATS-Compliant Template Engines
+   ========================================================================== */
+
+/* 1. Builder Workspace Layout */
+.builder-workspace {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  min-height: calc(100vh - 180px);
+}
+
+.builder-controls-column {
+  flex: 1 1 52%;
+  min-width: 0;
+}
+
+.builder-preview-column {
+  flex: 1 1 48%;
+  min-width: 0;
+  position: sticky;
+  top: calc(var(--sv-topbar-height) + 1.25rem);
+  max-height: calc(100vh - var(--sv-topbar-height) - 2.5rem);
+  overflow-y: auto;
+  padding-bottom: 2rem;
+}
+
+@media (max-width: 1199.98px) {
+  .builder-workspace {
+    flex-direction: column;
+  }
+  .builder-controls-column,
+  .builder-preview-column {
+    flex: 1 1 100%;
+    width: 100%;
+    position: static;
+    max-height: none;
+  }
+}
+
+/* 2. Builder Header & Toolbar */
+.builder-toolbar {
+  background: var(--sv-surface);
+  border: 1px solid var(--sv-border);
+  border-radius: var(--sv-radius-md);
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--sv-shadow-sm);
+  flex-wrap: wrap;
+}
+
+.template-selector-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.template-btn {
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--sv-radius-sm);
+  border: 1px solid var(--sv-border);
+  background: var(--sv-surface-warm);
+  color: var(--sv-charcoal);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.template-btn:hover {
+  border-color: var(--sv-terracotta);
+  color: var(--sv-terracotta);
+}
+
+.template-btn.active {
+  background: var(--sv-terracotta);
+  color: #ffffff;
+  border-color: var(--sv-terracotta);
+  box-shadow: 0 2px 8px rgba(196, 107, 79, 0.3);
+}
+
+/* 3. Section Cards & Repeaters */
+.builder-card {
+  background: var(--sv-surface);
+  border: 1px solid var(--sv-border);
+  border-radius: var(--sv-radius-md);
+  box-shadow: var(--sv-shadow-sm);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.builder-card:focus-within {
+  border-color: var(--sv-border-strong);
+}
+
+.builder-card-header {
+  padding: 1rem 1.25rem;
+  background: var(--sv-surface-warm);
+  border-bottom: 1px solid var(--sv-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.builder-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--sv-charcoal);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.builder-card-body {
+  padding: 1.25rem;
+}
+
+.repeater-item {
+  background: var(--sv-bg);
+  border: 1px solid var(--sv-border);
+  border-radius: var(--sv-radius-sm);
+  padding: 1.15rem;
+  margin-bottom: 1rem;
+  position: relative;
+  transition: box-shadow 0.2s ease;
+}
+
+.repeater-item:hover {
+  box-shadow: var(--sv-shadow-sm);
+}
+
+.repeater-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px dashed var(--sv-border);
+}
+
+.repeater-item-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--sv-charcoal);
+}
+
+.btn-remove-item {
+  background: none;
+  border: none;
+  color: var(--sv-danger);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.btn-remove-item:hover {
+  background: rgba(225, 29, 72, 0.1);
+}
+
+.btn-add-repeater {
+  width: 100%;
+  padding: 0.65rem;
+  background: var(--sv-surface-warm);
+  border: 1px dashed var(--sv-border-strong);
+  border-radius: var(--sv-radius-sm);
+  color: var(--sv-terracotta);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-add-repeater:hover {
+  background: var(--sv-beige);
+  border-color: var(--sv-terracotta);
+}
+
+/* 4. AI Assist Triggers & Badges */
+.ai-assist-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  background: var(--sv-surface-warm);
+  border: 1px solid var(--sv-border);
+  color: var(--sv-terracotta);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-assist-btn:hover {
+  background: var(--sv-terracotta);
+  color: #ffffff;
+  border-color: var(--sv-terracotta);
+}
+
+.ai-assist-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 5. A4 Live Preview Sheet Container */
+.preview-sheet-wrapper {
+  background: var(--sv-charcoal);
+  border-radius: var(--sv-radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--sv-shadow-md);
+  display: flex;
+  justify-content: center;
+}
+
+.resume-paper {
+  background: #ffffff;
+  color: #1e293b;
+  width: 100%;
+  max-width: 210mm;
+  min-height: 297mm;
+  padding: 16mm 18mm;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.45;
+  transition: all 0.25s ease;
+}
+
+/* Template 1: Modern Clean (Terracotta Accent) */
+.resume-paper.template-modern {
+  font-family: 'Inter', sans-serif;
+  color: #2b2724;
+}
+
+.template-modern .resume-header {
+  border-bottom: 2.5px solid var(--sv-terracotta);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.template-modern .candidate-name {
+  font-size: 20pt;
+  font-weight: 800;
+  color: var(--sv-charcoal);
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.template-modern .candidate-title {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--sv-terracotta);
+  margin-top: 2px;
+}
+
+.template-modern .contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 8.5pt;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+.template-modern .resume-section-title {
+  font-size: 11pt;
+  font-weight: 800;
+  color: var(--sv-charcoal);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 3px;
+  margin-top: 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.template-modern .resume-section-title::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 14px;
+  background: var(--sv-terracotta);
+  margin-right: 7px;
+  border-radius: 2px;
+}
+
+/* Template 2: Classic Executive (Serif / Formal) */
+.resume-paper.template-classic {
+  font-family: 'Georgia', serif;
+  color: #1a1a1a;
+  line-height: 1.5;
+}
+
+.template-classic .resume-header {
+  text-align: center;
+  border-bottom: 1.5px solid #1a1a1a;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.template-classic .candidate-name {
+  font-size: 22pt;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+.template-classic .candidate-title {
+  font-size: 10.5pt;
+  font-style: italic;
+  color: #4a4a4a;
+  margin-top: 3px;
+}
+
+.template-classic .contact-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 8.5pt;
+  color: #4a4a4a;
+  margin-top: 6px;
+}
+
+.template-classic .resume-section-title {
+  font-size: 11pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid #737373;
+  padding-bottom: 2px;
+  margin-top: 14px;
+  margin-bottom: 8px;
+}
+
+/* Template 3: Minimalist ATS (100% Machine Optimized) */
+.resume-paper.template-ats {
+  font-family: 'Arial', Helvetica, sans-serif;
+  color: #000000;
+  padding: 14mm 16mm;
+}
+
+.template-ats .resume-header {
+  border-bottom: 1px solid #000000;
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+}
+
+.template-ats .candidate-name {
+  font-size: 18pt;
+  font-weight: bold;
+  margin: 0;
+}
+
+.template-ats .candidate-title {
+  font-size: 10pt;
+  font-weight: bold;
+  color: #333333;
+}
+
+.template-ats .contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 8.5pt;
+  margin-top: 4px;
+}
+
+.template-ats .resume-section-title {
+  font-size: 10.5pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  border-bottom: 1px solid #000000;
+  padding-bottom: 2px;
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+
+/* Template 4: Tech Sleek */
+.resume-paper.template-tech {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #1e293b;
+}
+
+.template-tech .resume-header {
+  background: #f8fafc;
+  margin: -16mm -18mm 14px -18mm;
+  padding: 14mm 18mm 10mm 18mm;
+  border-bottom: 2px solid #334155;
+}
+
+.template-tech .candidate-name {
+  font-size: 20pt;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.template-tech .candidate-title {
+  font-size: 10.5pt;
+  font-weight: 600;
+  color: #475569;
+}
+
+.template-tech .contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 8.5pt;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+.template-tech .resume-section-title {
+  font-size: 10pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #0f172a;
+  letter-spacing: 0.06em;
+  background: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-top: 14px;
+  margin-bottom: 8px;
+}
+
+/* Shared Entry Formatting */
+.resume-entry {
+  margin-bottom: 10px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.resume-entry-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 700;
+  font-size: 9.5pt;
+}
+
+.resume-entry-sub {
+  display: flex;
+  justify-content: space-between;
+  font-style: italic;
+  font-size: 8.8pt;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.resume-bullets {
+  margin: 4px 0 0 16px;
+  padding: 0;
+  font-size: 9pt;
+}
+
+.resume-bullets li {
+  margin-bottom: 3px;
+  line-height: 1.4;
+}
+
+.skills-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.skill-pill {
+  font-size: 8.5pt;
+  background: #f1f5f9;
+  color: #334155;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 6. Print Engine Override */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .app-sidebar,
+  .app-topbar,
+  .app-footer,
+  .builder-controls-column,
+  .builder-toolbar,
+  .btn,
+  .preview-sheet-wrapper {
+    display: none !important;
+  }
+  #resumePaper,
+  #resumePaper * {
+    visibility: visible;
+  }
+  #resumePaper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+}

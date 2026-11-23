@@ -1,12 +1,25 @@
 from datetime import datetime
 import os
 import uuid
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from resume_parser import extract_keywords
 from question_generator import generate_questions
 from resume_analyzer import analyze_resume_file
+from db import (
+    init_db, save_resume, get_resume, list_resumes, delete_resume,
+    save_audit, get_recent_audits,
+    save_question_history, get_recent_questions,
+    save_mock_interview, get_mock_interview, list_mock_interviews, delete_mock_interview,
+    get_dashboard_stats
+)
+from resume_builder import (
+    generate_summary, improve_bullet, generate_project_description, get_action_verbs
+)
+from interview_simulator import (
+    generate_interview_questions, evaluate_answer, compile_final_report
+)
 
 # Load environment variables from .env
 load_dotenv()
@@ -16,6 +29,9 @@ UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload
+
+# Initialize SQLite database tables
+init_db()
 
 def process_resume_upload(req):
     """Safely extracts keywords from an uploaded resume and generates interview questions."""
@@ -44,6 +60,12 @@ def process_resume_upload(req):
         questions = generate_questions(keywords)
         if not questions:
             error = "Could not generate questions. Please ensure your Groq API key is valid and configured."
+        else:
+            # Persist question set to SQLite database
+            try:
+                save_question_history(filename, keywords, questions)
+            except Exception:
+                pass
     except Exception as e:
         error = f"Error processing resume: {str(e)}"
 
@@ -66,9 +88,19 @@ def index():
             active_page='question_generator',
             now=datetime.now()
         )
+    stats = get_dashboard_stats()
+    recent_audits = get_recent_audits(5)
+    recent_resumes = list_resumes(5)
+    recent_questions = get_recent_questions(5)
+    recent_interviews = list_mock_interviews(5)
     return render_template(
         'dashboard.html',
         active_page='dashboard',
+        stats=stats,
+        recent_audits=recent_audits,
+        recent_resumes=recent_resumes,
+        recent_questions=recent_questions,
+        recent_interviews=recent_interviews,
         now=datetime.now()
     )
 
@@ -76,9 +108,19 @@ def index():
 @app.route('/dashboard')
 def dashboard():
     """Skillverse Main Dashboard view."""
+    stats = get_dashboard_stats()
+    recent_audits = get_recent_audits(5)
+    recent_resumes = list_resumes(5)
+    recent_questions = get_recent_questions(5)
+    recent_interviews = list_mock_interviews(5)
     return render_template(
         'dashboard.html',
         active_page='dashboard',
+        stats=stats,
+        recent_audits=recent_audits,
+        recent_resumes=recent_resumes,
+        recent_questions=recent_questions,
+        recent_interviews=recent_interviews,
         now=datetime.now()
     )
 
@@ -155,6 +197,18 @@ def resume_analyzer():
                     error = analysis_error
                 else:
                     filename = original_filename
+                    # Persist audit record to SQLite database
+                    try:
+                        save_audit(
+                            original_filename,
+                            analysis.get("overall_score", 70),
+                            analysis.get("score_grade", "Competitive"),
+                            analysis.get("ats_readiness", {}).get("score", 70),
+                            analysis.get("ats_readiness", {}).get("level", "Moderate"),
+                            analysis
+                        )
+                    except Exception:
+                        pass
 
         except Exception as e:
             error = f"An unexpected error occurred while processing your resume: {str(e)}"
@@ -177,44 +231,232 @@ def resume_analyzer():
 
 
 # ---------------------------------------------------------------------------
-# Coming Soon Feature Routes (Phase 4 Roadmap)
+# AI Resume Builder Routes & APIs (Phase 4 Active Tool)
 # ---------------------------------------------------------------------------
-
 
 @app.route('/resume-builder')
 def resume_builder():
+    """Active Tool: Skillverse AI Resume Builder workspace with live A4 preview."""
     return render_template(
-        'coming_soon.html',
-        feature_title='AI Resume Builder',
-        feature_icon='bi-file-earmark-text',
-        feature_description='Create professional, ATS-optimized resumes in minutes with guided AI bullet point generation and modern templates.',
-        planned_items=[
-            'ATS-proof professional layout templates',
-            'Role-targeted bullet point generation with one-click adoption',
-            'Real-time keyword density and score checker',
-            'One-click PDF and DOCX export'
-        ],
+        'resume_builder.html',
         active_page='resume_builder',
         now=datetime.now()
     )
 
 
+@app.route('/api/resume-builder/save', methods=['POST'])
+def api_save_resume():
+    try:
+        payload = request.get_json() or {}
+        title = payload.get('title', 'Untitled Resume').strip()
+        template = payload.get('template', 'modern')
+        data_dict = payload.get('data', {})
+        resume_id = payload.get('id')
+        if resume_id:
+            try:
+                resume_id = int(resume_id)
+            except ValueError:
+                resume_id = None
+
+        saved_id = save_resume(title, template, data_dict, resume_id=resume_id)
+        return jsonify({"status": "success", "id": saved_id, "message": "Resume saved successfully."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/resume-builder/list', methods=['GET'])
+def api_list_resumes():
+    try:
+        resumes = list_resumes(limit=50)
+        return jsonify({"status": "success", "resumes": resumes})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/resume-builder/<int:resume_id>', methods=['GET'])
+def api_get_resume(resume_id):
+    try:
+        resume = get_resume(resume_id)
+        if not resume:
+            return jsonify({"status": "error", "message": "Resume not found."}), 404
+        return jsonify({"status": "success", "resume": resume})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/resume-builder/<int:resume_id>', methods=['DELETE'])
+def api_delete_resume(resume_id):
+    try:
+        deleted = delete_resume(resume_id)
+        return jsonify({"status": "success", "deleted": deleted})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/resume-builder/generate-summary', methods=['POST'])
+def api_generate_summary():
+    try:
+        payload = request.get_json() or {}
+        role = payload.get('role', '')
+        years = payload.get('experience_years', '')
+        skills = payload.get('skills', '')
+        notes = payload.get('raw_notes', '')
+
+        result, error = generate_summary(role, years, skills, notes)
+        if error:
+            return jsonify({"status": "error", "message": error}), 500
+        return jsonify({"status": "success", "result": result})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/resume-builder/improve-bullet', methods=['POST'])
+def api_improve_bullet():
+    try:
+        payload = request.get_json() or {}
+        bullet = payload.get('bullet', '')
+        role = payload.get('role', '')
+        focus = payload.get('focus', 'impact')
+
+        result, error = improve_bullet(bullet, role, focus)
+        if error:
+            return jsonify({"status": "error", "message": error}), 500
+        return jsonify({"status": "success", "result": result})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/resume-builder/suggest-verbs', methods=['GET'])
+def api_suggest_verbs():
+    try:
+        verbs = get_action_verbs()
+        return jsonify({"status": "success", "result": verbs})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/resume-builder/generate-project-desc', methods=['POST'])
+def api_generate_project_desc():
+    try:
+        payload = request.get_json() or {}
+        title = payload.get('title', '')
+        tech = payload.get('tech_stack', '')
+        highlights = payload.get('highlights', '')
+
+        result, error = generate_project_description(title, tech, highlights)
+        if error:
+            return jsonify({"status": "error", "message": error}), 500
+        return jsonify({"status": "success", "result": result})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# AI Mock Interview Simulator Routes & APIs (Phase 2 Active Tool)
+# ---------------------------------------------------------------------------
+
 @app.route('/mock-interview')
 def mock_interview():
+    """Active Tool: Skillverse AI Mock Interview Simulator with real-time AI scoring."""
     return render_template(
-        'coming_soon.html',
-        feature_title='Mock Interview Simulator',
-        feature_icon='bi-mic-fill',
-        feature_description='Engage in realistic conversational technical and behavioral mock interviews with turn-based voice or text interaction.',
-        planned_items=[
-            'Speech-to-text voice recognition for verbal practice',
-            'Automated STAR behavioral response framework scoring',
-            'Adaptive follow-up questions tailored to your answers',
-            'Post-interview performance scorecards with model answers'
-        ],
+        'mock_interview.html',
         active_page='mock_interview',
         now=datetime.now()
     )
+
+
+@app.route('/api/mock-interview/start', methods=['POST'])
+def api_mock_interview_start():
+    try:
+        payload = request.get_json() or {}
+        role = payload.get('role', 'Full Stack Developer')
+        level = payload.get('experience_level', 'Mid-Level (3-5 years)')
+        track = payload.get('interview_type', 'Technical')
+        count = int(payload.get('count', 5))
+        questions = generate_interview_questions(role, level, track, count)
+        return jsonify({"status": "success", "questions": questions})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/mock-interview/evaluate', methods=['POST'])
+def api_mock_interview_evaluate():
+    try:
+        payload = request.get_json() or {}
+        question = payload.get('question', '')
+        answer = payload.get('candidate_answer', '')
+        role = payload.get('role', 'Professional')
+        level = payload.get('experience_level', 'Mid-Level')
+        track = payload.get('interview_type', 'Technical')
+        evaluation = evaluate_answer(question, answer, role, level, track)
+        return jsonify({"status": "success", "evaluation": evaluation})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/mock-interview/complete', methods=['POST'])
+def api_mock_interview_complete():
+    try:
+        payload = request.get_json() or {}
+        role = payload.get('role', 'Software Engineer')
+        level = payload.get('experience_level', 'Mid-Level')
+        track = payload.get('interview_type', 'Technical')
+        qa_history = payload.get('qa_history', [])
+        report = compile_final_report(role, level, track, qa_history)
+        return jsonify({"status": "success", "report": report})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/mock-interview/save', methods=['POST'])
+def api_mock_interview_save():
+    try:
+        payload = request.get_json() or {}
+        role = payload.get('role', 'Software Engineer')
+        level = payload.get('experience_level', 'Mid-Level')
+        track = payload.get('interview_type', 'Technical')
+        overall_score = payload.get('overall_score', 0)
+        score_grade = payload.get('score_grade', 'Competent')
+        summary_feedback = payload.get('summary_feedback', '')
+        qa_history = payload.get('qa_history', [])
+        saved_id = save_mock_interview(role, level, track, overall_score, score_grade, summary_feedback, qa_history)
+        return jsonify({"status": "success", "id": saved_id, "message": "Interview session saved successfully."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/mock-interview/history', methods=['GET'])
+def api_mock_interview_history():
+    try:
+        interviews = list_mock_interviews(limit=30)
+        return jsonify({"status": "success", "interviews": interviews})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/mock-interview/<int:interview_id>', methods=['GET'])
+def api_mock_interview_get(interview_id):
+    try:
+        interview = get_mock_interview(interview_id)
+        if not interview:
+            return jsonify({"status": "error", "message": "Interview session not found."}), 404
+        return jsonify({"status": "success", "interview": interview})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/mock-interview/<int:interview_id>', methods=['DELETE'])
+def api_mock_interview_delete(interview_id):
+    try:
+        deleted = delete_mock_interview(interview_id)
+        return jsonify({"status": "success", "deleted": deleted})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# Coming Soon Feature Routes (Phase 4 Roadmap)
+# ---------------------------------------------------------------------------
 
 
 @app.route('/ats-checker')

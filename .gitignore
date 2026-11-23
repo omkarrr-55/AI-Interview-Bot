@@ -28,3 +28,9 @@ backup_phase3/
 backup_theme_redesign/
 *.bak
 static/images/test.txt
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+instance/

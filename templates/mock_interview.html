@@ -1,0 +1,1083 @@
+{% extends "base.html" %}
+
+{% block title %}AI Mock Interview Simulator | Skillverse{% endblock %}
+
+{% block extra_head %}
+<!-- Mock Interview Custom Stylesheet -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mock_interview.css') }}">
+<!-- html2pdf.js for Scorecard PDF Generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="interview-wrapper">
+    <!-- Top Banner -->
+    <div class="interview-banner d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge" style="background:var(--sv-terracotta); color:#fff; font-size:0.75rem; letter-spacing:0.04em;">PHASE 2 LIVE</span>
+                <span class="text-muted small fw-semibold">&bull; Powered by Groq Llama-3.3</span>
+            </div>
+            <h1 class="h3 fw-bold text-dark mb-1" style="font-family:'Outfit', sans-serif;">AI Mock Interview Simulator</h1>
+            <p class="text-muted mb-0 small">
+                Practice realistic technical, behavioral, and HR interviews with real-time AI scoring, STAR framework auditing, and exemplar answers.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" id="open-history-btn" onclick="openHistoryModal()">
+                <i class="bi bi-clock-history"></i>
+                <span>Past Sessions</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stepper Navigation -->
+    <div class="step-stepper">
+        <div class="step-node active" id="node-step-1">
+            <div class="step-circle">1</div>
+            <span>Configure Track</span>
+        </div>
+        <div class="step-divider" id="divider-step-1"></div>
+        <div class="step-node" id="node-step-2">
+            <div class="step-circle">2</div>
+            <span>Interview Arena</span>
+        </div>
+        <div class="step-divider" id="divider-step-2"></div>
+        <div class="step-node" id="node-step-3">
+            <div class="step-circle">3</div>
+            <span>Performance Scorecard</span>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         STEP 1: SETUP WIZARD
+         ===================================================================== -->
+    <div id="step-setup" class="setup-card">
+        <h2 class="h5 fw-bold text-dark mb-1" style="font-family:'Outfit', sans-serif;">Configure Your Simulation</h2>
+        <p class="text-muted small mb-4">Select your target position, seniority level, and interview focus to generate tailor-made questions.</p>
+
+        <!-- 1. Target Job Role -->
+        <div class="mb-4">
+            <label class="form-label fw-bold small text-dark mb-2">1. Target Job Role</label>
+            <div class="mb-2">
+                <span class="role-chip" onclick="selectRole('Full Stack Developer')">Full Stack Developer</span>
+                <span class="role-chip" onclick="selectRole('Backend Engineer')">Backend Engineer</span>
+                <span class="role-chip" onclick="selectRole('Frontend Engineer')">Frontend Engineer</span>
+                <span class="role-chip" onclick="selectRole('Data Scientist')">Data Scientist</span>
+                <span class="role-chip" onclick="selectRole('Machine Learning Engineer')">Machine Learning Engineer</span>
+                <span class="role-chip" onclick="selectRole('DevOps & Cloud Engineer')">DevOps & Cloud Engineer</span>
+                <span class="role-chip" onclick="selectRole('Product Manager')">Product Manager</span>
+                <span class="role-chip" onclick="selectRole('Cybersecurity Analyst')">Cybersecurity Analyst</span>
+            </div>
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-briefcase"></i></span>
+                <input type="text" id="role-input" class="form-control border-start-0" placeholder="e.g. Senior Software Architect, React Native Developer..." value="Full Stack Developer">
+            </div>
+        </div>
+
+        <!-- 2. Experience Level -->
+        <div class="mb-4">
+            <label class="form-label fw-bold small text-dark mb-2">2. Experience Tier</label>
+            <div class="selection-grid">
+                <div class="select-card-radio" onclick="selectLevel(this, 'Junior (0-2 years)')">
+                    <div class="select-card-icon"><i class="bi bi-mortarboard"></i></div>
+                    <div class="select-card-title">Junior / Entry</div>
+                    <div class="select-card-sub">0 - 2 years &bull; Core fundamentals, clean code, learning mindset</div>
+                </div>
+                <div class="select-card-radio active" onclick="selectLevel(this, 'Mid-Level (3-5 years)')">
+                    <div class="select-card-icon"><i class="bi bi-code-slash"></i></div>
+                    <div class="select-card-title">Mid-Level</div>
+                    <div class="select-card-sub">3 - 5 years &bull; System design, independent delivery, best practices</div>
+                </div>
+                <div class="select-card-radio" onclick="selectLevel(this, 'Senior (5-8 years)')">
+                    <div class="select-card-icon"><i class="bi bi-award"></i></div>
+                    <div class="select-card-title">Senior Engineer</div>
+                    <div class="select-card-sub">5 - 8 years &bull; Architecture trade-offs, scaling, mentorship</div>
+                </div>
+                <div class="select-card-radio" onclick="selectLevel(this, 'Lead / Principal (8+ years)')">
+                    <div class="select-card-icon"><i class="bi bi-diagram-3"></i></div>
+                    <div class="select-card-title">Lead / Principal</div>
+                    <div class="select-card-sub">8+ years &bull; Cross-team strategy, organizational impact</div>
+                </div>
+            </div>
+            <input type="hidden" id="level-input" value="Mid-Level (3-5 years)">
+        </div>
+
+        <!-- 3. Interview Track -->
+        <div class="mb-4">
+            <label class="form-label fw-bold small text-dark mb-2">3. Interview Track</label>
+            <div class="selection-grid">
+                <div class="select-card-radio active" onclick="selectTrack(this, 'Technical')">
+                    <div class="select-card-icon"><i class="bi bi-cpu"></i></div>
+                    <div class="select-card-title">Technical Deep Dive</div>
+                    <div class="select-card-sub">Data structures, architecture, API design, debugging, performance</div>
+                </div>
+                <div class="select-card-radio" onclick="selectTrack(this, 'Behavioral (STAR)')">
+                    <div class="select-card-icon"><i class="bi bi-people"></i></div>
+                    <div class="select-card-title">Behavioral (STAR)</div>
+                    <div class="select-card-sub">Leadership, conflict resolution, crisis management, ownership</div>
+                </div>
+                <div class="select-card-radio" onclick="selectTrack(this, 'HR & Cultural Fit')">
+                    <div class="select-card-icon"><i class="bi bi-heart-pulse"></i></div>
+                    <div class="select-card-title">HR & Cultural Fit</div>
+                    <div class="select-card-sub">Motivation, work culture, team collaboration, career goals</div>
+                </div>
+                <div class="select-card-radio" onclick="selectTrack(this, 'Mixed Comprehensive')">
+                    <div class="select-card-icon"><i class="bi bi-shuffle"></i></div>
+                    <div class="select-card-title">Comprehensive Mix</div>
+                    <div class="select-card-sub">Balanced rotation of technical architecture and behavioral queries</div>
+                </div>
+            </div>
+            <input type="hidden" id="track-input" value="Technical">
+        </div>
+
+        <!-- 4. Number of Questions -->
+        <div class="mb-4">
+            <label class="form-label fw-bold small text-dark mb-2">4. Interview Length</label>
+            <div class="d-flex gap-3">
+                <div class="form-check form-check-inline p-2 border rounded" style="background:var(--sv-card); cursor:pointer;">
+                    <input class="form-check-input ms-1 me-2" type="radio" name="qCountRadio" id="qCount3" value="3">
+                    <label class="form-check-label small fw-semibold text-dark pe-2" for="qCount3" style="cursor:pointer;">
+                        Quick Drill (3 Questions &bull; ~10 mins)
+                    </label>
+                </div>
+                <div class="form-check form-check-inline p-2 border rounded" style="background:var(--sv-card); cursor:pointer;">
+                    <input class="form-check-input ms-1 me-2" type="radio" name="qCountRadio" id="qCount5" value="5" checked>
+                    <label class="form-check-label small fw-semibold text-dark pe-2" for="qCount5" style="cursor:pointer;">
+                        Full Simulation (5 Questions &bull; ~20 mins)
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-top pt-4 d-flex justify-content-end">
+            <button id="start-interview-btn" class="btn btn-primary d-inline-flex align-items-center gap-2 px-4 py-2" style="background:var(--sv-terracotta); border-color:var(--sv-terracotta);" onclick="startInterview()">
+                <i class="bi bi-play-circle-fill"></i>
+                <span class="fw-semibold">Launch Interview Simulation</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         STEP 2: LIVE INTERVIEW ARENA
+         ===================================================================== -->
+    <div id="step-arena" class="arena-card" style="display:none;">
+        <!-- Arena Topbar -->
+        <div class="arena-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <div class="question-badge mb-0" id="arena-q-counter">
+                    <i class="bi bi-chat-quote"></i> Question 1 of 5
+                </div>
+                <span class="badge bg-light text-dark border" id="arena-q-category">Technical</span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="timer-badge active">
+                    <i class="bi bi-stopwatch"></i>
+                    <span id="arena-timer-display">00:00</span>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="confirmEndEarly()" title="End Interview Early">
+                    <i class="bi bi-x-circle"></i> Exit
+                </button>
+            </div>
+        </div>
+
+        <!-- Question Section -->
+        <div class="question-box">
+            <div class="d-flex align-items-start justify-content-between gap-3 mb-2">
+                <div class="question-text" id="arena-question-text">
+                    Loading your interview question...
+                </div>
+                <button class="listen-btn flex-shrink-0" id="listen-question-btn" onclick="toggleAudioQuestion()">
+                    <i class="bi bi-volume-up-fill"></i>
+                    <span id="listen-btn-text">Listen</span>
+                </button>
+            </div>
+
+            <!-- Intent Callout -->
+            <div class="intent-callout" id="arena-intent-box">
+                <div class="d-flex align-items-center gap-1 fw-bold text-dark mb-1">
+                    <i class="bi bi-info-circle text-primary" style="color:var(--sv-terracotta) !important;"></i>
+                    What Interviewers Evaluate:
+                </div>
+                <div id="arena-intent-text">Assessing architectural depth, scalability trade-offs, and clear communication.</div>
+            </div>
+        </div>
+
+        <!-- Candidate Answer Section -->
+        <div class="answer-section">
+            <label class="form-label fw-bold small text-dark mb-2 d-flex justify-content-between align-items-center">
+                <span>Your Response</span>
+                <span class="text-muted fw-normal" style="font-size:0.75rem;">Structured answers using STAR or concrete examples score highest</span>
+            </label>
+            <textarea id="candidate-answer-textarea" class="answer-textarea" placeholder="Type your response here or click the microphone button below to dictate verbally..." rows="7" oninput="updateWordCount()"></textarea>
+
+            <div class="answer-toolbar">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="voice-mic-btn" id="mic-toggle-btn" onclick="toggleSpeechRecognition()">
+                        <i class="bi bi-mic-fill" id="mic-icon"></i>
+                        <span id="mic-label">Dictate Answer</span>
+                    </button>
+                    <span class="word-count-badge" id="word-count-display">0 words &bull; 0 chars</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearAnswerInput()">Clear</button>
+                    <button id="submit-answer-btn" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2" style="background:var(--sv-terracotta); border-color:var(--sv-terracotta);" onclick="submitTurnAnswer()">
+                        <i class="bi bi-send-check"></i>
+                        <span class="fw-semibold">Submit Answer</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Turn AI Evaluation Result (Injected dynamically) -->
+            <div id="turn-eval-container" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         STEP 3: COMPREHENSIVE PERFORMANCE SCORECARD
+         ===================================================================== -->
+    <div id="step-scorecard" style="display:none;">
+        <div class="scorecard-container" id="printable-scorecard">
+            <!-- Scorecard Hero -->
+            <div class="scorecard-hero">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge" style="background:var(--sv-terracotta); color:#fff; font-size:0.75rem;">OFFICIAL EVALUATION</span>
+                        <span class="text-muted small" id="report-date-badge">November 2026</span>
+                    </div>
+                    <h2 class="h3 fw-bold text-dark mb-1" style="font-family:'Outfit', sans-serif;" id="report-role-title">Full Stack Developer Interview Report</h2>
+                    <div class="text-muted small" id="report-meta-sub">Experience Level: Mid-Level (3-5 years) &bull; Track: Technical Deep Dive</div>
+                    <div class="mt-3">
+                        <span class="badge py-2 px-3 fs-6" id="report-recommendation-badge" style="background:var(--sv-terracotta); color:#fff;">Strong Hire &bull; Exceeds Bar</span>
+                    </div>
+                </div>
+
+                <!-- Circular Score Gauge -->
+                <div class="score-gauge-box">
+                    <div class="score-gauge-num" id="report-score-num">86</div>
+                    <div class="score-gauge-label" id="report-grade-label">Grade A</div>
+                </div>
+            </div>
+
+            <div class="p-4 p-md-5">
+                <!-- Dimension Breakdown Bars -->
+                <h3 class="h6 fw-bold text-dark text-uppercase mb-3" style="letter-spacing:0.05em;">Performance Dimensions</h3>
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="dimension-bar-wrap">
+                            <div class="dimension-header">
+                                <span>Technical Depth &amp; Role Mastery</span>
+                                <span id="dim-tech-val">88%</span>
+                            </div>
+                            <div class="dimension-bar"><div class="dimension-fill" id="dim-tech-fill" style="width: 88%;"></div></div>
+                        </div>
+                        <div class="dimension-bar-wrap">
+                            <div class="dimension-header">
+                                <span>Problem Solving &amp; Critical Thinking</span>
+                                <span id="dim-problem-val">84%</span>
+                            </div>
+                            <div class="dimension-bar"><div class="dimension-fill" id="dim-problem-fill" style="width: 84%;"></div></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="dimension-bar-wrap">
+                            <div class="dimension-header">
+                                <span>Communication Clarity &amp; Articulation</span>
+                                <span id="dim-comm-val">90%</span>
+                            </div>
+                            <div class="dimension-bar"><div class="dimension-fill" id="dim-comm-fill" style="width: 90%;"></div></div>
+                        </div>
+                        <div class="dimension-bar-wrap">
+                            <div class="dimension-header">
+                                <span>Structure &amp; Delivery Rigor (STAR)</span>
+                                <span id="dim-struct-val">82%</span>
+                            </div>
+                            <div class="dimension-bar"><div class="dimension-fill" id="dim-struct-fill" style="width: 82%;"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Executive Summary Callout -->
+                <div class="p-3 rounded mb-4" style="background:var(--sv-card); border-left: 4px solid var(--sv-terracotta);">
+                    <div class="fw-bold text-dark small mb-1"><i class="bi bi-file-earmark-person text-primary" style="color:var(--sv-terracotta) !important;"></i> Executive Hiring Committee Synthesis</div>
+                    <p class="mb-0 small text-dark" id="report-executive-summary" style="line-height:1.6;">
+                        The candidate demonstrated strong domain fundamentals, communicating complex technical concepts with precision and composure.
+                    </p>
+                </div>
+
+                <!-- Strengths vs Growth Areas -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded h-100" style="background:#F6FBF8; border:1px solid rgba(79,128,100,0.25);">
+                            <div class="fw-bold small text-success mb-2 d-flex align-items-center gap-1">
+                                <i class="bi bi-check-circle-fill"></i> Key Standout Strengths
+                            </div>
+                            <ul class="mb-0 ps-3 small text-dark" id="report-strengths-list" style="line-height:1.5;">
+                                <li>Clear architecture and modular design breakdown</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded h-100" style="background:#FDF8F7; border:1px solid rgba(196,107,79,0.25);">
+                            <div class="fw-bold small mb-2 d-flex align-items-center gap-1" style="color:var(--sv-terracotta);">
+                                <i class="bi bi-arrow-up-right-circle-fill"></i> Priority Growth Areas
+                            </div>
+                            <ul class="mb-0 ps-3 small text-dark" id="report-growth-list" style="line-height:1.5;">
+                                <li>Incorporate concrete production metrics and quantified latency gains</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Q&A Transcript Accordion -->
+                <h3 class="h6 fw-bold text-dark text-uppercase mb-3" style="letter-spacing:0.05em;">Question-by-Question Transcript &amp; Audit</h3>
+                <div id="report-qa-accordion"></div>
+            </div>
+        </div>
+
+        <!-- Action Toolbar -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mt-4">
+            <button class="btn btn-outline-secondary" onclick="resetInterviewSetup()">
+                <i class="bi bi-arrow-counterclockwise"></i> Practice Another Role
+            </button>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-outline-success" id="save-db-btn" onclick="saveInterviewToDatabase()">
+                    <i class="bi bi-cloud-arrow-up"></i> Save Session
+                </button>
+                <button class="btn btn-primary d-inline-flex align-items-center gap-2" style="background:var(--sv-terracotta); border-color:var(--sv-terracotta);" onclick="downloadScorecardPDF()">
+                    <i class="bi bi-file-earmark-pdf"></i> Download PDF Scorecard
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================================
+     PAST SESSIONS HISTORY MODAL
+     ===================================================================== -->
+<div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold" id="historyModalLabel"><i class="bi bi-clock-history me-2 text-primary" style="color:var(--sv-terracotta) !important;"></i> Past Mock Interviews</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="history-modal-body">
+                <div class="text-center py-4 text-muted small">
+                    <div class="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
+                    <div>Loading saved sessions...</div>
+                </div>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================================
+     CLIENT APPLICATION LOGIC
+     ===================================================================== -->
+<script>
+// Interview State Object
+const state = {
+    role: "Full Stack Developer",
+    level: "Mid-Level (3-5 years)",
+    track: "Technical",
+    count: 5,
+    questions: [],
+    currentIndex: 0,
+    qaHistory: [],
+    timerSeconds: 0,
+    timerInterval: null,
+    isSpeaking: false,
+    isRecording: false,
+    recognition: null,
+    finalReport: null,
+    savedSessionId: null
+};
+
+// ---------------------------------------------------------------------------
+// Step 1: Setup Handlers
+// ---------------------------------------------------------------------------
+function selectRole(roleName) {
+    document.getElementById('role-input').value = roleName;
+}
+
+function selectLevel(element, levelValue) {
+    document.querySelectorAll('.selection-grid')[0].querySelectorAll('.select-card-radio').forEach(el => el.classList.remove('active'));
+    element.classList.add('active');
+    document.getElementById('level-input').value = levelValue;
+}
+
+function selectTrack(element, trackValue) {
+    document.querySelectorAll('.selection-grid')[1].querySelectorAll('.select-card-radio').forEach(el => el.classList.remove('active'));
+    element.classList.add('active');
+    document.getElementById('track-input').value = trackValue;
+}
+
+async function startInterview() {
+    const role = document.getElementById('role-input').value.trim() || "Full Stack Developer";
+    const level = document.getElementById('level-input').value;
+    const track = document.getElementById('track-input').value;
+    const countRadio = document.querySelector('input[name="qCountRadio"]:checked');
+    const count = countRadio ? parseInt(countRadio.value) : 5;
+
+    state.role = role;
+    state.level = level;
+    state.track = track;
+    state.count = count;
+    state.currentIndex = 0;
+    state.qaHistory = [];
+    state.timerSeconds = 0;
+
+    const startBtn = document.getElementById('start-interview-btn');
+    startBtn.disabled = true;
+    startBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Generating Tailored Questions...';
+
+    try {
+        const response = await fetch('/api/mock-interview/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                role: state.role,
+                experience_level: state.level,
+                interview_type: state.track,
+                count: state.count
+            })
+        });
+
+        const data = await response.json();
+        if (data.status === 'success' && data.questions && data.questions.length > 0) {
+            state.questions = data.questions;
+            state.count = data.questions.length;
+
+            // Transition to Arena
+            document.getElementById('step-setup').style.display = 'none';
+            document.getElementById('step-arena').style.display = 'block';
+            document.getElementById('step-scorecard').style.display = 'none';
+
+            // Update Stepper
+            document.getElementById('node-step-1').classList.remove('active');
+            document.getElementById('node-step-1').classList.add('completed');
+            document.getElementById('divider-step-1').classList.add('active');
+            document.getElementById('node-step-2').classList.add('active');
+
+            // Start timer & load question 0
+            startTimer();
+            loadQuestion(0);
+        } else {
+            alert(data.message || "Failed to generate interview questions. Please try again.");
+        }
+    } catch (err) {
+        alert("An error occurred while connecting to the simulator: " + err.message);
+    } finally {
+        startBtn.disabled = false;
+        startBtn.innerHTML = '<i class="bi bi-play-circle-fill"></i> <span class="fw-semibold">Launch Interview Simulation</span>';
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step 2: Arena & Turn Handlers
+// ---------------------------------------------------------------------------
+function startTimer() {
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    state.timerSeconds = 0;
+    const timerDisplay = document.getElementById('arena-timer-display');
+    state.timerInterval = setInterval(() => {
+        state.timerSeconds++;
+        const mins = Math.floor(state.timerSeconds / 60).toString().padStart(2, '0');
+        const secs = (state.timerSeconds % 60).toString().padStart(2, '0');
+        timerDisplay.textContent = `${mins}:${secs}`;
+    }, 1000);
+}
+
+function loadQuestion(index) {
+    state.currentIndex = index;
+    const q = state.questions[index];
+
+    document.getElementById('arena-q-counter').innerHTML = `<i class="bi bi-chat-quote"></i> Question ${index + 1} of ${state.count}`;
+    document.getElementById('arena-q-category').textContent = q.category || state.track;
+    document.getElementById('arena-question-text').textContent = q.question;
+    document.getElementById('arena-intent-text').textContent = q.intent || "Tests core problem solving, system design, and communication.";
+
+    // Reset Answer Input & Turn Eval container
+    document.getElementById('candidate-answer-textarea').value = '';
+    document.getElementById('candidate-answer-textarea').disabled = false;
+    updateWordCount();
+    document.getElementById('turn-eval-container').style.display = 'none';
+    document.getElementById('turn-eval-container').innerHTML = '';
+    document.getElementById('submit-answer-btn').style.display = 'inline-flex';
+    document.getElementById('submit-answer-btn').disabled = false;
+    document.getElementById('submit-answer-btn').innerHTML = '<i class="bi bi-send-check"></i> <span class="fw-semibold">Submit Answer</span>';
+
+    // Stop speaking if active
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    state.isSpeaking = false;
+    updateListenBtnUI();
+}
+
+function updateWordCount() {
+    const text = document.getElementById('candidate-answer-textarea').value.trim();
+    const words = text ? text.split(/\s+/).length : 0;
+    const chars = text.length;
+    document.getElementById('word-count-display').textContent = `${words} words • ${chars} chars`;
+}
+
+function clearAnswerInput() {
+    document.getElementById('candidate-answer-textarea').value = '';
+    updateWordCount();
+}
+
+// Web Speech API: Text-to-Speech
+function toggleAudioQuestion() {
+    if (!('speechSynthesis' in window)) {
+        alert("Text-to-speech is not supported in this browser.");
+        return;
+    }
+
+    if (state.isSpeaking) {
+        window.speechSynthesis.cancel();
+        state.isSpeaking = false;
+        updateListenBtnUI();
+        return;
+    }
+
+    const textToSpeak = state.questions[state.currentIndex].question;
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    utterance.onstart = () => {
+        state.isSpeaking = true;
+        updateListenBtnUI();
+    };
+    utterance.onend = () => {
+        state.isSpeaking = false;
+        updateListenBtnUI();
+    };
+    utterance.onerror = () => {
+        state.isSpeaking = false;
+        updateListenBtnUI();
+    };
+
+    window.speechSynthesis.speak(utterance);
+}
+
+function updateListenBtnUI() {
+    const btn = document.getElementById('listen-question-btn');
+    const label = document.getElementById('listen-btn-text');
+    if (state.isSpeaking) {
+        btn.classList.add('speaking');
+        label.textContent = "Stop";
+    } else {
+        btn.classList.remove('speaking');
+        label.textContent = "Listen";
+    }
+}
+
+// Web Speech API: Speech-to-Text Dictation
+function toggleSpeechRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Speech-to-text is not supported in this browser. Please use Chrome, Edge, or Safari.");
+        return;
+    }
+
+    if (state.isRecording) {
+        if (state.recognition) state.recognition.stop();
+        return;
+    }
+
+    state.recognition = new SpeechRecognition();
+    state.recognition.continuous = true;
+    state.recognition.interimResults = true;
+    state.recognition.lang = 'en-US';
+
+    state.recognition.onstart = () => {
+        state.isRecording = true;
+        updateMicBtnUI();
+    };
+
+    state.recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            transcript += event.results[i][0].transcript;
+        }
+        const textarea = document.getElementById('candidate-answer-textarea');
+        textarea.value = (textarea.value + ' ' + transcript).trim();
+        updateWordCount();
+    };
+
+    state.recognition.onerror = (e) => {
+        console.error("Speech Recognition Error: ", e);
+        state.isRecording = false;
+        updateMicBtnUI();
+    };
+
+    state.recognition.onend = () => {
+        state.isRecording = false;
+        updateMicBtnUI();
+    };
+
+    state.recognition.start();
+}
+
+function updateMicBtnUI() {
+    const btn = document.getElementById('mic-toggle-btn');
+    const label = document.getElementById('mic-label');
+    if (state.isRecording) {
+        btn.classList.add('recording');
+        label.textContent = "Listening... (Click to Stop)";
+    } else {
+        btn.classList.remove('recording');
+        label.textContent = "Dictate Answer";
+    }
+}
+
+// Submit Turn Answer
+async function submitTurnAnswer() {
+    const answer = document.getElementById('candidate-answer-textarea').value.trim();
+    if (!answer) {
+        alert("Please provide an answer before submitting.");
+        return;
+    }
+
+    // Stop dictation or TTS if running
+    if (state.isRecording && state.recognition) state.recognition.stop();
+    if (state.isSpeaking) window.speechSynthesis.cancel();
+
+    const currentQ = state.questions[state.currentIndex];
+    const submitBtn = document.getElementById('submit-answer-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Scoring Answer with AI...';
+
+    try {
+        const response = await fetch('/api/mock-interview/evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                question: currentQ.question,
+                candidate_answer: answer,
+                role: state.role,
+                experience_level: state.level,
+                interview_type: state.track
+            })
+        });
+
+        const data = await response.json();
+        if (data.status === 'success' && data.evaluation) {
+            const ev = data.evaluation;
+
+            // Record turn in history
+            state.qaHistory.push({
+                question_id: currentQ.id,
+                category: currentQ.category,
+                question: currentQ.question,
+                answer: answer,
+                evaluation: ev
+            });
+
+            // Disable textarea to prevent further edits
+            document.getElementById('candidate-answer-textarea').disabled = true;
+            submitBtn.style.display = 'none';
+
+            // Render Turn Feedback Card
+            renderTurnEvaluation(ev);
+        } else {
+            alert(data.message || "Failed to evaluate answer. Please try again.");
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-send-check"></i> <span class="fw-semibold">Submit Answer</span>';
+        }
+    } catch (err) {
+        alert("Error during evaluation: " + err.message);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-send-check"></i> <span class="fw-semibold">Submit Answer</span>';
+    }
+}
+
+function renderTurnEvaluation(ev) {
+    const score = ev.score || 70;
+    let pillClass = 'high';
+    if (score < 65) pillClass = 'low';
+    else if (score < 80) pillClass = 'medium';
+
+    const star = ev.star_analysis || {};
+    const strengths = (ev.strengths || []).map(s => `<li>${s}</li>`).join('');
+    const improvements = (ev.improvements || []).map(i => `<li>${i}</li>`).join('');
+
+    const isLast = (state.currentIndex + 1) >= state.count;
+    const nextBtnLabel = isLast ? "Generate Final Scorecard" : `Proceed to Question ${state.currentIndex + 2}`;
+    const nextBtnIcon = isLast ? "bi-award-fill" : "bi-arrow-right-circle-fill";
+
+    const html = `
+        <div class="eval-card">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="score-pill ${pillClass}">
+                        <i class="bi bi-trophy-fill"></i> Score: ${score}/100 &bull; ${ev.score_grade || 'Competent'}
+                    </span>
+                </div>
+                <div class="text-muted small">Turn ${state.currentIndex + 1} of ${state.count}</div>
+            </div>
+
+            <p class="text-dark small mb-3" style="line-height:1.6;">${ev.feedback || ''}</p>
+
+            <!-- STAR Framework Analysis -->
+            <div class="star-grid">
+                <div class="star-cell">
+                    <div class="star-title">Situation</div>
+                    <div class="star-desc">${star.situation || 'Outlined'}</div>
+                </div>
+                <div class="star-cell">
+                    <div class="star-title">Task</div>
+                    <div class="star-desc">${star.task || 'Defined'}</div>
+                </div>
+                <div class="star-cell">
+                    <div class="star-title">Action</div>
+                    <div class="star-desc">${star.action || 'Described'}</div>
+                </div>
+                <div class="star-cell">
+                    <div class="star-title">Result</div>
+                    <div class="star-desc">${star.result || 'Impact highlighted'}</div>
+                </div>
+            </div>
+
+            <!-- Strengths & Growth -->
+            <div class="row g-3 my-2">
+                <div class="col-md-6">
+                    <div class="fw-bold small text-success mb-1"><i class="bi bi-check-circle"></i> Strengths Identified:</div>
+                    <ul class="mb-0 ps-3 small text-muted">${strengths || '<li>Solid fundamentals.</li>'}</ul>
+                </div>
+                <div class="col-md-6">
+                    <div class="fw-bold small mb-1" style="color:var(--sv-terracotta);"><i class="bi bi-lightbulb"></i> Recommended Improvements:</div>
+                    <ul class="mb-0 ps-3 small text-muted">${improvements || '<li>Include quantifiable metrics.</li>'}</ul>
+                </div>
+            </div>
+
+            <!-- Model Exemplar Answer -->
+            <div class="model-answer-card">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <div class="fw-bold small text-dark" style="color:var(--sv-terracotta) !important;">
+                        <i class="bi bi-star-fill text-warning"></i> Exemplar Model Answer:
+                    </div>
+                </div>
+                <p class="mb-0 small text-dark fst-italic" style="line-height:1.5;">"${ev.model_answer || ''}"</p>
+            </div>
+
+            <!-- Next Step CTA -->
+            <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                <button class="btn btn-primary d-inline-flex align-items-center gap-2 px-4 py-2" style="background:var(--sv-terracotta); border-color:var(--sv-terracotta);" onclick="handleNextStep()">
+                    <i class="bi ${nextBtnIcon}"></i>
+                    <span class="fw-semibold">${nextBtnLabel}</span>
+                </button>
+            </div>
+        </div>
+    `;
+
+    const container = document.getElementById('turn-eval-container');
+    container.innerHTML = html;
+    container.style.display = 'block';
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function handleNextStep() {
+    if ((state.currentIndex + 1) < state.count) {
+        loadQuestion(state.currentIndex + 1);
+    } else {
+        await finishInterview();
+    }
+}
+
+function confirmEndEarly() {
+    if (confirm("Are you sure you want to end the interview early? A scorecard will be generated based on your answers so far.")) {
+        finishInterview();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step 3: Final Report Compilation
+// ---------------------------------------------------------------------------
+async function finishInterview() {
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    if (state.isRecording && state.recognition) state.recognition.stop();
+
+    // Show loading state
+    document.getElementById('arena-question-text').textContent = "Compiling comprehensive performance report...";
+    document.getElementById('turn-eval-container').innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary mb-3" style="color:var(--sv-terracotta) !important;" role="status"></div>
+            <div class="h5 fw-bold text-dark">Synthesizing Your Final Performance Scorecard...</div>
+            <div class="text-muted small">Aggregating dimension scores, STAR analysis, and executive hiring feedback</div>
+        </div>
+    `;
+
+    try {
+        const response = await fetch('/api/mock-interview/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                role: state.role,
+                experience_level: state.level,
+                interview_type: state.track,
+                qa_history: state.qaHistory
+            })
+        });
+
+        const data = await response.json();
+        if (data.status === 'success' && data.report) {
+            state.finalReport = data.report;
+            renderFinalScorecard(data.report);
+        } else {
+            alert(data.message || "Failed to generate scorecard.");
+        }
+    } catch (err) {
+        alert("Error compiling report: " + err.message);
+    }
+}
+
+function renderFinalScorecard(report) {
+    // Transition views
+    document.getElementById('step-arena').style.display = 'none';
+    document.getElementById('step-scorecard').style.display = 'block';
+
+    // Stepper
+    document.getElementById('node-step-2').classList.remove('active');
+    document.getElementById('node-step-2').classList.add('completed');
+    document.getElementById('divider-step-2').classList.add('active');
+    document.getElementById('node-step-3').classList.add('active');
+
+    // Populate Report Fields
+    document.getElementById('report-date-badge').textContent = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    document.getElementById('report-role-title').textContent = `${state.role} Performance Report`;
+    document.getElementById('report-meta-sub').textContent = `Experience Level: ${state.level} • Track: ${state.track}`;
+    document.getElementById('report-score-num').textContent = report.overall_score;
+    document.getElementById('report-grade-label').textContent = `Grade ${report.letter_grade}`;
+    document.getElementById('report-recommendation-badge').textContent = report.recommendation;
+
+    // Dimensions
+    const dims = report.dimension_scores || {};
+    const tech = dims.technical_depth || 80;
+    const comm = dims.communication || 85;
+    const prob = dims.problem_solving || 82;
+    const stru = dims.structure_rigor || 80;
+
+    document.getElementById('dim-tech-val').textContent = `${tech}%`;
+    document.getElementById('dim-tech-fill').style.width = `${tech}%`;
+
+    document.getElementById('dim-comm-val').textContent = `${comm}%`;
+    document.getElementById('dim-comm-fill').style.width = `${comm}%`;
+
+    document.getElementById('dim-problem-val').textContent = `${prob}%`;
+    document.getElementById('dim-problem-fill').style.width = `${prob}%`;
+
+    document.getElementById('dim-struct-val').textContent = `${stru}%`;
+    document.getElementById('dim-struct-fill').style.width = `${stru}%`;
+
+    // Executive Summary
+    document.getElementById('report-executive-summary').textContent = report.summary_feedback || '';
+
+    // Strengths & Growth Lists
+    const sList = document.getElementById('report-strengths-list');
+    sList.innerHTML = (report.key_strengths || []).map(s => `<li>${s}</li>`).join('') || '<li>Consistent delivery of answers.</li>';
+
+    const gList = document.getElementById('report-growth-list');
+    gList.innerHTML = (report.growth_areas || []).map(g => `<li>${g}</li>`).join('') || '<li>Explore more architectural edge cases.</li>';
+
+    // Accordion of Q&A
+    const acc = document.getElementById('report-qa-accordion');
+    acc.innerHTML = (report.qa_history || []).map((item, idx) => {
+        const ev = item.evaluation || {};
+        const score = ev.score || 70;
+        return `
+            <div class="qa-accordion-item">
+                <div class="qa-accordion-header" onclick="toggleAccordion('qa-body-${idx}')">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge" style="background:var(--sv-terracotta); color:#fff;">Q${idx + 1}</span>
+                        <span class="fw-semibold text-dark small">${item.question}</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <span class="badge bg-light text-dark border">Score: ${score}/100</span>
+                        <i class="bi bi-chevron-down text-muted"></i>
+                    </div>
+                </div>
+                <div class="qa-accordion-body" id="qa-body-${idx}" style="display: ${idx === 0 ? 'block' : 'none'};">
+                    <div class="mb-3">
+                        <div class="fw-bold small text-muted mb-1 text-uppercase" style="font-size:0.72rem;">Your Answer:</div>
+                        <p class="mb-0 small text-dark p-2 rounded bg-light" style="line-height:1.5;">${item.answer}</p>
+                    </div>
+                    <div class="mb-3">
+                        <div class="fw-bold small text-muted mb-1 text-uppercase" style="font-size:0.72rem;">Evaluator Feedback:</div>
+                        <p class="mb-0 small text-dark" style="line-height:1.5;">${ev.feedback || ''}</p>
+                    </div>
+                    <div>
+                        <div class="fw-bold small mb-1 text-uppercase" style="color:var(--sv-terracotta); font-size:0.72rem;">Exemplar Model Answer:</div>
+                        <p class="mb-0 small text-dark fst-italic p-2 rounded" style="background:#FFFBF9; border-left:3px solid var(--sv-terracotta); line-height:1.5;">"${ev.model_answer || ''}"</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Scroll to top of scorecard
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleAccordion(bodyId) {
+    const el = document.getElementById(bodyId);
+    if (el) {
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function resetInterviewSetup() {
+    document.getElementById('step-scorecard').style.display = 'none';
+    document.getElementById('step-arena').style.display = 'none';
+    document.getElementById('step-setup').style.display = 'block';
+
+    document.getElementById('node-step-1').classList.remove('completed');
+    document.getElementById('node-step-1').classList.add('active');
+    document.getElementById('divider-step-1').classList.remove('active');
+    document.getElementById('node-step-2').classList.remove('completed', 'active');
+    document.getElementById('divider-step-2').classList.remove('active');
+    document.getElementById('node-step-3').classList.remove('active');
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ---------------------------------------------------------------------------
+// Save to SQLite Database
+// ---------------------------------------------------------------------------
+async function saveInterviewToDatabase() {
+    if (!state.finalReport) {
+        alert("No interview report available to save.");
+        return;
+    }
+
+    const saveBtn = document.getElementById('save-db-btn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Saving...';
+
+    try {
+        const response = await fetch('/api/mock-interview/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                role: state.role,
+                experience_level: state.level,
+                interview_type: state.track,
+                overall_score: state.finalReport.overall_score,
+                score_grade: state.finalReport.score_grade,
+                summary_feedback: state.finalReport.summary_feedback,
+                qa_history: state.qaHistory
+            })
+        });
+
+        const data = await response.json();
+        if (data.status === 'success') {
+            state.savedSessionId = data.id;
+            saveBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Saved in Database';
+            saveBtn.classList.remove('btn-outline-success');
+            saveBtn.classList.add('btn-success');
+        } else {
+            alert(data.message || "Failed to save session.");
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> Save Session';
+        }
+    } catch (err) {
+        alert("Error saving session: " + err.message);
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> Save Session';
+    }
+}
+
+// ---------------------------------------------------------------------------
+// PDF Export with html2pdf
+// ---------------------------------------------------------------------------
+function downloadScorecardPDF() {
+    const element = document.getElementById('printable-scorecard');
+    if (!element) return;
+
+    // Expand all accordion items before printing
+    document.querySelectorAll('.qa-accordion-body').forEach(b => b.style.display = 'block');
+
+    const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `Skillverse_Mock_Interview_${state.role.replace(/[^a-zA-Z0-9]/g, '_')}_Scorecard.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+}
+
+// ---------------------------------------------------------------------------
+// Past Sessions History Modal
+// ---------------------------------------------------------------------------
+async function openHistoryModal() {
+    const modalEl = document.getElementById('historyModal');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    const body = document.getElementById('history-modal-body');
+    body.innerHTML = `
+        <div class="text-center py-4 text-muted small">
+            <div class="spinner-border text-primary spinner-border-sm mb-2" style="color:var(--sv-terracotta) !important;" role="status"></div>
+            <div>Retrieving past interview history...</div>
+        </div>
+    `;
+
+    try {
+        const response = await fetch('/api/mock-interview/history');
+        const data = await response.json();
+
+        if (data.status === 'success' && data.interviews && data.interviews.length > 0) {
+            body.innerHTML = data.interviews.map(item => `
+                <div class="history-item-card" id="history-item-${item.id}">
+                    <div>
+                        <div class="fw-bold text-dark small">${item.role}</div>
+                        <div class="text-muted" style="font-size:0.75rem;">
+                            ${item.experience_level} &bull; ${item.interview_type} &bull; ${item.created_at}
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge" style="background:var(--sv-terracotta);">${item.overall_score}/100</span>
+                        <button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.75rem;" onclick="deleteHistoryItem(${item.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            body.innerHTML = `
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-mic fs-2 d-block mb-2 opacity-50"></i>
+                    No saved interview sessions found. Complete an interview and click "Save Session" to track your progress over time!
+                </div>
+            `;
+        }
+    } catch (err) {
+        body.innerHTML = `<div class="text-danger small py-3">Error loading history: ${err.message}</div>`;
+    }
+}
+
+async function deleteHistoryItem(id) {
+    if (!confirm("Are you sure you want to delete this interview record?")) return;
+
+    try {
+        const response = await fetch(`/api/mock-interview/${id}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (data.status === 'success') {
+            const el = document.getElementById(`history-item-${id}`);
+            if (el) el.remove();
+        } else {
+            alert(data.message || "Failed to delete record.");
+        }
+    } catch (err) {
+        alert("Error deleting record: " + err.message);
+    }
+}
+</script>
+{% endblock %}

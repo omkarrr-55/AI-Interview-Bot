@@ -23,6 +23,62 @@
     </div>
 </div>
 
+<!-- Dynamic Database Metrics Strip -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm p-3 h-100" style="border-radius:14px; background:var(--sv-surface);">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:44px; height:44px; border-radius:10px; background:rgba(196,107,79,0.12); color:var(--sv-terracotta); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
+                    <i class="bi bi-file-earmark-person"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-bold text-uppercase" style="letter-spacing:0.04em;">Resumes Audited</div>
+                    <div class="h4 fw-bold mb-0 text-dark">{{ stats.total_audits if stats else 0 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm p-3 h-100" style="border-radius:14px; background:var(--sv-surface);">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:44px; height:44px; border-radius:10px; background:rgba(79,128,100,0.12); color:var(--sv-green); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-bold text-uppercase" style="letter-spacing:0.04em;">Avg. ATS Match</div>
+                    <div class="h4 fw-bold mb-0 text-dark">{{ stats.avg_ats if stats else 82 }}%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm p-3 h-100" style="border-radius:14px; background:var(--sv-surface);">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:44px; height:44px; border-radius:10px; background:rgba(196,107,79,0.12); color:var(--sv-terracotta); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-bold text-uppercase" style="letter-spacing:0.04em;">Resumes Saved</div>
+                    <div class="h4 fw-bold mb-0 text-dark">{{ stats.total_resumes if stats else 0 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm p-3 h-100" style="border-radius:14px; background:var(--sv-surface);">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:44px; height:44px; border-radius:10px; background:rgba(64,59,54,0.1); color:var(--sv-charcoal); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
+                    <i class="bi bi-patch-question"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-bold text-uppercase" style="letter-spacing:0.04em;">Question Sets</div>
+                    <div class="h4 fw-bold mb-0 text-dark">{{ stats.total_question_sets if stats else 0 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Tools Suite Section -->
 <div class="section-header" id="suite-tools">
     <div>
@@ -70,40 +126,40 @@
         </div>
     </div>
 
-    <!-- 3. AI Resume Builder -->
-    <div class="feature-card">
+    <!-- 3. AI Resume Builder (WORKING) -->
+    <div class="feature-card" style="border-top: 4px solid var(--sv-terracotta);">
         <div class="feature-card-header">
             <div class="feature-icon-wrapper grad-3">
                 <i class="bi bi-file-earmark-text"></i>
             </div>
-            <span class="status-badge badge-soon">Coming Soon</span>
+            <span class="status-badge badge-active"><i class="bi bi-check2-circle"></i> Live Tool</span>
         </div>
         <h3 class="feature-title">AI Resume Builder</h3>
         <p class="feature-desc">
             Craft modern, high-impact resumes with AI-generated bullet points, optimized phrasing, and export-ready ATS compliant templates.
         </p>
         <div class="feature-card-footer">
-            <a href="{{ url_for('resume_builder') }}" class="btn-cp-outline w-100 justify-content-center">
-                <i class="bi bi-eye"></i> Preview Tool
+            <a href="{{ url_for('resume_builder') }}" class="btn-cp-primary w-100 justify-content-center">
+                <i class="bi bi-magic"></i> Launch Builder
             </a>
         </div>
     </div>
 
-    <!-- 4. Mock Interview -->
-    <div class="feature-card">
+    <!-- 4. Mock Interview (WORKING) -->
+    <div class="feature-card" style="border-top: 4px solid var(--sv-terracotta);">
         <div class="feature-card-header">
             <div class="feature-icon-wrapper grad-4">
                 <i class="bi bi-mic-fill"></i>
             </div>
-            <span class="status-badge badge-soon">Coming Soon</span>
+            <span class="status-badge badge-active"><i class="bi bi-check2-circle"></i> Live Tool</span>
         </div>
         <h3 class="feature-title">Mock Interview Simulator</h3>
         <p class="feature-desc">
-            Simulate real technical and behavioral interviews with conversational voice/text AI, adaptive follow-up questions, and instant STAR scoring.
+            Simulate real technical and behavioral interviews with conversational voice/text AI, adaptive questions, and instant STAR scoring.
         </p>
         <div class="feature-card-footer">
-            <a href="{{ url_for('mock_interview') }}" class="btn-cp-outline w-100 justify-content-center">
-                <i class="bi bi-eye"></i> Preview Tool
+            <a href="{{ url_for('mock_interview') }}" class="btn-cp-primary w-100 justify-content-center">
+                <i class="bi bi-mic"></i> Launch Simulator
             </a>
         </div>
     </div>
@@ -181,6 +237,126 @@
             <a href="{{ url_for('settings_page') }}" class="btn-cp-outline w-100 justify-content-center">
                 <i class="bi bi-sliders"></i> Open Settings
             </a>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity & Database History -->
+<div class="row g-4 mt-2">
+    <!-- Recent Resume Audits -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:16px;">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="h6 fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-primary" style="color:var(--sv-terracotta) !important;"></i>
+                        Recent Resume Audits
+                    </h4>
+                    <a href="{{ url_for('resume_analyzer') }}" class="btn btn-sm btn-link text-decoration-none p-0" style="color:var(--sv-terracotta);">
+                        Audit New <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+
+                {% if recent_audits %}
+                <div class="list-group list-group-flush">
+                    {% for a in recent_audits %}
+                    <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                        <div class="me-2 text-truncate">
+                            <div class="fw-semibold text-dark small text-truncate">{{ a.filename }}</div>
+                            <div class="text-muted" style="font-size:0.75rem;">{{ a.created_at }}</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                            <span class="badge" style="background:var(--sv-terracotta);">Score: {{ a.overall_score }}</span>
+                            <span class="badge bg-light text-dark border">ATS: {{ a.ats_score }}%</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-file-earmark-medical fs-2 d-block mb-1 opacity-50"></i>
+                    No resumes audited yet. Upload a resume in the <a href="{{ url_for('resume_analyzer') }}" style="color:var(--sv-terracotta);">Analyzer</a> to see reports here!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Saved Resumes & History -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:16px;">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="h6 fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-richtext text-primary" style="color:var(--sv-terracotta) !important;"></i>
+                        Saved Resumes (Database)
+                    </h4>
+                    <a href="{{ url_for('resume_builder') }}" class="btn btn-sm btn-link text-decoration-none p-0" style="color:var(--sv-terracotta);">
+                        Open Builder <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+
+                {% if recent_resumes %}
+                <div class="list-group list-group-flush">
+                    {% for r in recent_resumes %}
+                    <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                        <div class="me-2 text-truncate">
+                            <div class="fw-semibold text-dark small text-truncate">{{ r.title }}</div>
+                            <div class="text-muted" style="font-size:0.75rem;">Template: {{ r.template | upper }} &bull; {{ r.updated_at }}</div>
+                        </div>
+                        <a href="{{ url_for('resume_builder') }}" class="btn btn-sm btn-outline-secondary py-1 px-2" style="font-size:0.75rem;">
+                            Edit
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-folder-plus fs-2 d-block mb-1 opacity-50"></i>
+                    No saved resumes yet. Create your first resume with the <a href="{{ url_for('resume_builder') }}" style="color:var(--sv-terracotta);">Resume Builder</a>!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Mock Interviews -->
+    <div class="col-lg-12">
+        <div class="card border-0 shadow-sm" style="border-radius:16px;">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="h6 fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-mic-fill text-primary" style="color:var(--sv-terracotta) !important;"></i>
+                        Recent Mock Interviews (Database)
+                    </h4>
+                    <a href="{{ url_for('mock_interview') }}" class="btn btn-sm btn-link text-decoration-none p-0" style="color:var(--sv-terracotta);">
+                        Start Simulation <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+
+                {% if recent_interviews %}
+                <div class="row g-3">
+                    {% for m in recent_interviews %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="p-3 rounded border" style="background:var(--sv-card);">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge" style="background:var(--sv-terracotta);">Score: {{ m.overall_score }}/100</span>
+                                <span class="badge bg-light text-dark border">{{ m.score_grade }}</span>
+                            </div>
+                            <div class="fw-bold text-dark small text-truncate">{{ m.role }}</div>
+                            <div class="text-muted" style="font-size:0.75rem;">{{ m.experience_level }} &bull; {{ m.interview_type }}</div>
+                            <div class="text-muted mt-2" style="font-size:0.72rem;">{{ m.created_at }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-mic fs-2 d-block mb-1 opacity-50"></i>
+                    No mock interviews taken yet. Practice your interview skills with the <a href="{{ url_for('mock_interview') }}" style="color:var(--sv-terracotta);">Mock Interview Simulator</a>!
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
