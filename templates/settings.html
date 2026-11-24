@@ -1,0 +1,978 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings & Preferences - Skillverse{% endblock %}
+{% block breadcrumb %}Settings{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+
+    <!-- Header Card -->
+    <div class="settings-header-card">
+        <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+            <div>
+                <span class="settings-badge">
+                    <i class="bi bi-sliders"></i> Platform Control Center
+                </span>
+                <h1 class="settings-title">Settings & Preferences</h1>
+                <p class="settings-subtitle mb-0">
+                    Customize your AI evaluation rigor, manage candidate profile defaults, monitor Groq API latency, and maintain storage capacity.
+                </p>
+            </div>
+            <div>
+                <button type="button" class="btn btn-cp-primary d-flex align-items-center gap-2" id="btnSaveTop">
+                    <i class="bi bi-check2-circle"></i> Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="settings-nav-tabs" role="tablist">
+        <button class="settings-nav-tab active" data-tab="tab-appearance">
+            <i class="bi bi-palette-fill"></i> Appearance & Display
+        </button>
+        <button class="settings-nav-tab" data-tab="tab-ai">
+            <i class="bi bi-cpu-fill"></i> AI Engine & Models
+        </button>
+        <button class="settings-nav-tab" data-tab="tab-profile">
+            <i class="bi bi-person-badge-fill"></i> Candidate Profile Defaults
+        </button>
+        <button class="settings-nav-tab" data-tab="tab-storage">
+            <i class="bi bi-database-fill"></i> Storage & Cache
+        </button>
+        <button class="settings-nav-tab" data-tab="tab-system">
+            <i class="bi bi-info-circle-fill"></i> System Diagnostics
+        </button>
+    </div>
+
+    <form id="settingsForm">
+        <input type="hidden" id="inputThemeMode" name="theme_mode" value="{{ settings.theme_mode|default('system') }}">
+        <input type="hidden" id="inputFontSize" name="font_size" value="{{ settings.font_size|default('medium') }}">
+
+        <!-- TAB 0: Appearance & Display Settings -->
+        <div class="settings-tab-pane" id="tab-appearance">
+            <div class="settings-panel-card">
+                <div class="settings-section-header">
+                    <h3 class="settings-section-title">
+                        <i class="bi bi-palette-fill" style="color:var(--sv-terracotta);"></i>
+                        Appearance & Display Preferences
+                    </h3>
+                    <div class="settings-section-desc">Personalize your color palette, dark mode contrast, and typography scaling across all tools.</div>
+                </div>
+
+                <!-- Theme Selection Section -->
+                <div class="mb-4">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                        <label class="form-label fw-bold mb-0">Interface Theme</label>
+                        <span class="badge bg-light text-dark border small" id="activeThemeBadge">
+                            <i class="bi bi-circle-fill" style="color:var(--sv-terracotta); font-size:0.6rem;"></i> Active: System Default
+                        </span>
+                    </div>
+                    <p class="text-muted small mb-3">Choose how Skillverse displays across your browser sessions. Selections update immediately without page reloads.</p>
+
+                    <div class="theme-card-grid">
+                        <!-- 1. Light Mode Card -->
+                        <div class="theme-card" data-theme-val="light" id="themeCardLight">
+                            <div class="theme-card-preview preview-light">
+                                <div class="mock-sidebar">
+                                    <div class="mock-logo"></div>
+                                    <div class="mock-nav-item active"></div>
+                                    <div class="mock-nav-item"></div>
+                                    <div class="mock-nav-item"></div>
+                                </div>
+                                <div class="mock-body">
+                                    <div class="mock-card">
+                                        <div class="mock-line"></div>
+                                        <div class="mock-line-sub"></div>
+                                        <div class="mock-btn"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="theme-card-info">
+                                <div>
+                                    <div class="theme-card-title">
+                                        <i class="bi bi-sun-fill" style="color:#d97736;"></i> Light Mode
+                                    </div>
+                                    <p class="theme-card-desc">Skillverse classic Warm Beige & Terracotta ivory aesthetic.</p>
+                                </div>
+                                <div class="theme-card-indicator" id="indicatorLight">
+                                    <i class="bi bi-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Dark Mode Card -->
+                        <div class="theme-card" data-theme-val="dark" id="themeCardDark">
+                            <div class="theme-card-preview preview-dark">
+                                <div class="mock-sidebar">
+                                    <div class="mock-logo"></div>
+                                    <div class="mock-nav-item active"></div>
+                                    <div class="mock-nav-item"></div>
+                                    <div class="mock-nav-item"></div>
+                                </div>
+                                <div class="mock-body">
+                                    <div class="mock-card">
+                                        <div class="mock-line"></div>
+                                        <div class="mock-line-sub"></div>
+                                        <div class="mock-btn"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="theme-card-info">
+                                <div>
+                                    <div class="theme-card-title">
+                                        <i class="bi bi-moon-stars-fill" style="color:#818cf8;"></i> Dark Mode
+                                    </div>
+                                    <p class="theme-card-desc">Sophisticated warm charcoal palette with gentle low-light contrast.</p>
+                                </div>
+                                <div class="theme-card-indicator" id="indicatorDark">
+                                    <i class="bi bi-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. System Default Card -->
+                        <div class="theme-card" data-theme-val="system" id="themeCardSystem">
+                            <div class="theme-card-preview preview-system">
+                                <div class="preview-system-split-left preview-light">
+                                    <div class="mock-sidebar">
+                                        <div class="mock-logo"></div>
+                                        <div class="mock-nav-item active"></div>
+                                    </div>
+                                    <div class="mock-body">
+                                        <div class="mock-card">
+                                            <div class="mock-line"></div>
+                                            <div class="mock-btn"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="preview-system-split-right preview-dark">
+                                    <div class="mock-sidebar">
+                                        <div class="mock-logo"></div>
+                                        <div class="mock-nav-item active"></div>
+                                    </div>
+                                    <div class="mock-body">
+                                        <div class="mock-card">
+                                            <div class="mock-line"></div>
+                                            <div class="mock-btn"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="preview-system-badge">
+                                    <i class="bi bi-laptop"></i> Auto
+                                </div>
+                            </div>
+                            <div class="theme-card-info">
+                                <div>
+                                    <div class="theme-card-title">
+                                        <i class="bi bi-laptop-fill" style="color:var(--sv-terracotta);"></i> System Default
+                                    </div>
+                                    <p class="theme-card-desc">Automatically synchronizes with your device or OS color scheme.</p>
+                                    <div class="small mt-1 text-muted" id="systemDetectedNote" style="font-size:0.75rem;">
+                                        Detected OS: <strong id="detectedOsLabel">Light</strong>
+                                    </div>
+                                </div>
+                                <div class="theme-card-indicator" id="indicatorSystem">
+                                    <i class="bi bi-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Font Size Scaling Section -->
+                <div class="mb-4 pt-3 border-top">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                        <label class="form-label fw-bold mb-0">Typography & Font Scaling</label>
+                        <span class="badge bg-light text-dark border small" id="activeFontBadge">
+                            <i class="bi bi-fonts"></i> Medium (16px)
+                        </span>
+                    </div>
+                    <p class="text-muted small mb-3">Adjust scale proportionally across all headers, cards, tables, and AI output reports while preserving layouts.</p>
+
+                    <div class="font-size-grid">
+                        <!-- Small Size -->
+                        <div class="font-size-card" data-size-val="small" id="fontCardSmall">
+                            <div class="font-size-sample">Aa</div>
+                            <div class="font-size-meta">
+                                <div class="font-size-name">Small (90%)</div>
+                                <p class="font-size-desc">14.5px base &bull; High information density</p>
+                            </div>
+                            <div class="font-size-indicator" id="fontIndicatorSmall">
+                                <i class="bi bi-circle"></i>
+                            </div>
+                        </div>
+
+                        <!-- Medium Size (Default) -->
+                        <div class="font-size-card" data-size-val="medium" id="fontCardMedium">
+                            <div class="font-size-sample">Aa</div>
+                            <div class="font-size-meta">
+                                <div class="font-size-name">
+                                    Medium (100%)
+                                    <span class="badge bg-light text-muted border ms-1" style="font-size:0.65rem;">Default</span>
+                                </div>
+                                <p class="font-size-desc">16px base &bull; Balanced standard hierarchy</p>
+                            </div>
+                            <div class="font-size-indicator" id="fontIndicatorMedium">
+                                <i class="bi bi-circle"></i>
+                            </div>
+                        </div>
+
+                        <!-- Large Size -->
+                        <div class="font-size-card" data-size-val="large" id="fontCardLarge">
+                            <div class="font-size-sample">Aa</div>
+                            <div class="font-size-meta">
+                                <div class="font-size-name">Large (110%)</div>
+                                <p class="font-size-desc">17.5px base &bull; Enhanced legibility & comfort</p>
+                            </div>
+                            <div class="font-size-indicator" id="fontIndicatorLarge">
+                                <i class="bi bi-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Appearance Preview Component -->
+                <div class="pt-3 border-top">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label class="form-label fw-bold mb-0">
+                            <i class="bi bi-eye-fill me-1" style="color:var(--sv-terracotta);"></i>
+                            Live Appearance Preview
+                        </label>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="preview-badge-pill" id="previewPillTheme">
+                                <i class="bi bi-palette"></i> <span id="previewPillThemeText">Light Theme Active</span>
+                            </span>
+                            <span class="preview-badge-pill" id="previewPillFont">
+                                <i class="bi bi-type"></i> <span id="previewPillFontText">16px Medium</span>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-3">Live mockup reflecting typography, contrast, buttons, and surfaces under your selected options.</p>
+
+                    <div class="live-preview-box" id="livePreviewContainer">
+                        <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 pb-3 mb-3 border-bottom">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="user-avatar" style="width:44px; height:44px; font-size:1rem;">OM</div>
+                                <div>
+                                    <h5 class="fw-bold mb-1" id="previewCandidateTitle">Omkar More &bull; AI Software Engineer</h5>
+                                    <div class="text-muted small">Target Role: Full Stack AI Developer &bull; Experience: Mid-Level</div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-dark border px-2 py-1">
+                                    <i class="bi bi-shield-check text-success me-1"></i> ATS Match: <strong>94%</strong>
+                                </span>
+                                <span class="badge" style="background:var(--sv-terracotta-light); color:var(--sv-terracotta);">
+                                    Ready for Interview
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 align-items-center">
+                            <div class="col-lg-8">
+                                <p class="mb-2" style="line-height:1.6;">
+                                    <strong>AI Evaluation Summary:</strong> Candidate exhibits high proficiency in distributed cloud systems, Python backend services, and dynamic AI model orchestration. Recommendations include emphasizing end-to-end telemetry and containerized deployments in future mock rounds.
+                                </p>
+                                <div class="d-flex flex-wrap gap-2 pt-2">
+                                    <button type="button" class="btn btn-cp-primary btn-sm">
+                                        <i class="bi bi-mic-fill"></i> Start Mock Simulation
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-file-earmark-pdf"></i> Export Audit Report
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="p-3 rounded border" style="background:var(--sv-surface-warm);">
+                                    <label class="form-label small fw-bold mb-1">Quick Candidate Note</label>
+                                    <input type="text" class="form-control form-control-sm mb-2" value="Preferred interview round: Technical Architecture" readonly>
+                                    <div class="d-flex justify-content-between align-items-center small text-muted" style="font-size:0.75rem;">
+                                        <span>Status: Synchronized</span>
+                                        <span class="text-success"><i class="bi bi-check2"></i> Validated</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TAB 1: AI Engine & Models -->
+        <div class="settings-tab-pane d-none" id="tab-ai">
+            <div class="settings-panel-card">
+                <div class="settings-section-header">
+                    <h3 class="settings-section-title">
+                        <i class="bi bi-lightning-charge-fill" style="color:var(--sv-terracotta);"></i>
+                        Groq AI Inference Engine & Connectivity
+                    </h3>
+                    <div class="settings-section-desc">Manage API connectivity, default LLM inference model, and evaluation strictness.</div>
+                </div>
+
+                <!-- Live Status Bar -->
+                <div class="ai-status-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="status-indicator-dot"></span>
+                        <div>
+                            <div class="fw-bold text-dark small">Groq API Cloud Connectivity</div>
+                            <div class="text-muted" style="font-size:0.75rem;">
+                                Key: <code>{{ masked_api_key }}</code> &bull; Primary: <strong>Llama 3.3 70B Versatile</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-dark border d-none" id="latencyBadge">
+                            <i class="bi bi-stopwatch"></i> Latency: <span id="latencyVal">--</span>ms
+                        </span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" id="btnTestAi">
+                            <span class="spinner-border spinner-border-sm d-none" id="testAiSpinner" role="status"></span>
+                            <i class="bi bi-broadcast" id="testAiIcon"></i> Ping Connection
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Test AI Alert Output -->
+                <div class="alert alert-success d-none mb-4 small" id="aiTestResultBox" role="alert">
+                    <i class="bi bi-check-circle-fill me-1"></i> <span id="aiTestResultText"></span>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Preferred Model -->
+                    <div class="col-md-6">
+                        <label class="form-label" for="preferredModelSelect">
+                            Preferred Inference Model
+                        </label>
+                        <select class="form-select" id="preferredModelSelect" name="preferred_model">
+                            <option value="qwen/qwen3.8-27b" {% if settings.preferred_model == 'qwen/qwen3.8-27b' or not settings.preferred_model %}selected{% endif %}>
+                                Qwen 3.8 27B (Recommended — High-Speed Reasoning & Code)
+                            </option>
+                            <option value="openai/gpt-oss-120b" {% if settings.preferred_model == 'openai/gpt-oss-120b' %}selected{% endif %}>
+                                GPT-OSS 120B (Deep Analytical Reasoning)
+                            </option>
+                            <option value="openai/gpt-oss-20b" {% if settings.preferred_model == 'openai/gpt-oss-20b' %}selected{% endif %}>
+                                GPT-OSS 20B (Fast Lightweight Inference)
+                            </option>
+                            <option value="llama-3.3-70b-versatile" {% if settings.preferred_model == 'llama-3.3-70b-versatile' %}selected{% endif %}>
+                                Llama 3.3 70B Versatile (Meta Llama Enterprise)
+                            </option>
+                        </select>
+                        <div class="form-text" style="font-size:0.75rem;">
+                            Model cascade will automatically failover to secondary models if your preferred model is rate-limited.
+                        </div>
+                    </div>
+
+                    <!-- AI Rigor -->
+                    <div class="col-md-6">
+                        <label class="form-label" for="aiRigorSelect">
+                            Evaluation Rigor & Scoring Strictness
+                        </label>
+                        <select class="form-select" id="aiRigorSelect" name="ai_rigor">
+                            <option value="Coaching" {% if settings.ai_rigor == 'Coaching' %}selected{% endif %}>
+                                Supportive & Encouraging (Ideal for students / beginners)
+                            </option>
+                            <option value="Balanced" {% if settings.ai_rigor == 'Balanced' %}selected{% endif %}>
+                                Balanced (Industry Standard Benchmark)
+                            </option>
+                            <option value="Strict" {% if settings.ai_rigor == 'Strict' %}selected{% endif %}>
+                                Strict FAANG Recruiter (Rigorously highlights any ambiguity)
+                            </option>
+                        </select>
+                        <div class="form-text" style="font-size:0.75rem;">
+                            Controls prompt guidance across Mock Interview evaluations and Resume audits.
+                        </div>
+                    </div>
+
+                    <!-- Temperature -->
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label mb-0" for="tempRange">Model Temperature / Creativity</label>
+                            <span class="badge bg-light text-dark border" id="tempDisplay">{{ settings.evaluation_temperature or '0.4' }}</span>
+                        </div>
+                        <input type="range" class="form-range" min="0.1" max="0.9" step="0.05" id="tempRange" name="evaluation_temperature" value="{{ settings.evaluation_temperature or '0.4' }}">
+                        <div class="d-flex justify-content-between text-muted" style="font-size:0.7rem;">
+                            <span>0.1 (Deterministic / Exact)</span>
+                            <span>0.4 (Recommended)</span>
+                            <span>0.9 (Creative / Exploratory)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Candidate Profile Defaults -->
+        <div class="settings-tab-pane d-none" id="tab-profile">
+            <div class="settings-panel-card">
+                <div class="settings-section-header">
+                    <h3 class="settings-section-title">
+                        <i class="bi bi-person-vcard-fill" style="color:var(--sv-terracotta);"></i>
+                        Candidate Profile & Career Defaults
+                    </h3>
+                    <div class="settings-section-desc">
+                        Set your default identity and target role so tools like the Resume Builder, Mock Interview, and ATS Checker pre-fill automatically.
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="candidateName">Candidate Full Name</label>
+                        <input type="text" class="form-control" id="candidateName" name="candidate_name" value="{{ settings.candidate_name or 'Omkar' }}" placeholder="e.g. Alex Johnson">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="candidateEmail">Primary Contact Email</label>
+                        <input type="email" class="form-control" id="candidateEmail" name="candidate_email" value="{{ settings.candidate_email or '' }}" placeholder="e.g. alex@example.com">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="candidatePhone">Phone Number</label>
+                        <input type="tel" class="form-control" id="candidatePhone" name="candidate_phone" value="{{ settings.candidate_phone or '' }}" placeholder="+1 (555) 000-0000">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="candidateLocation">Location / City</label>
+                        <input type="text" class="form-control" id="candidateLocation" name="candidate_location" value="{{ settings.candidate_location or '' }}" placeholder="e.g. San Francisco, CA">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="targetRole">Default Target Role</label>
+                        <input type="text" class="form-control" id="targetRole" name="target_role" value="{{ settings.target_role or 'Full Stack Developer' }}" placeholder="e.g. Python Developer, Full Stack Developer">
+                        <div class="form-text" style="font-size:0.75rem;">Auto-populates target career fields across the platform.</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="expLevelSelect">Default Experience Tier</label>
+                        <select class="form-select" id="expLevelSelect" name="experience_level">
+                            <option value="Entry-Level" {% if settings.experience_level == 'Entry-Level' %}selected{% endif %}>Entry-Level (0–2 years)</option>
+                            <option value="Mid-Level" {% if settings.experience_level == 'Mid-Level' %}selected{% endif %}>Mid-Level (3–5 years)</option>
+                            <option value="Senior" {% if settings.experience_level == 'Senior' %}selected{% endif %}>Senior / Lead (5+ years)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Storage & Cache -->
+        <div class="settings-tab-pane d-none" id="tab-storage">
+            <div class="settings-panel-card">
+                <div class="settings-section-header">
+                    <h3 class="settings-section-title">
+                        <i class="bi bi-hdd-stack-fill" style="color:var(--sv-terracotta);"></i>
+                        Database & Storage Management
+                    </h3>
+                    <div class="settings-section-desc">Monitor persistent SQLite records, inspect local upload cache, and maintain disk hygiene.</div>
+                </div>
+
+                <!-- Storage Metric Tiles -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6 col-lg">
+                        <div class="metric-tile">
+                            <div class="metric-tile-val" id="tileResumes">{{ storage.resumes_count }}</div>
+                            <div class="metric-tile-label">Saved Resumes</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg">
+                        <div class="metric-tile">
+                            <div class="metric-tile-val" id="tileAudits">{{ storage.audits_count }}</div>
+                            <div class="metric-tile-label">Resume Audits</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg">
+                        <div class="metric-tile">
+                            <div class="metric-tile-val" id="tileAts">{{ storage.ats_count }}</div>
+                            <div class="metric-tile-label">ATS Scans</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg">
+                        <div class="metric-tile">
+                            <div class="metric-tile-val" id="tileInterviews">{{ storage.interviews_count }}</div>
+                            <div class="metric-tile-label">Mock Interviews</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg">
+                        <div class="metric-tile">
+                            <div class="metric-tile-val" id="tileDbSize">{{ storage.db_size_kb }} KB</div>
+                            <div class="metric-tile-label">Database File</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Cache Card -->
+                <div class="p-3 rounded border mb-4" style="background:var(--sv-card);">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
+                        <div>
+                            <div class="fw-bold text-dark small d-flex align-items-center gap-2">
+                                <i class="bi bi-folder2-open text-primary" style="color:var(--sv-terracotta) !important;"></i>
+                                Temporary Uploads Cache (<code>uploads/</code>)
+                            </div>
+                            <div class="text-muted" style="font-size:0.75rem;">
+                                Currently storing <strong id="uploadsCount">{{ uploads_count }}</strong> uploaded document files (<span id="uploadsSize">{{ uploads_size_kb }} KB</span>).
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3" id="btnClearUploads">
+                            <i class="bi bi-trash3"></i> Clear Upload Cache
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="danger-zone-card">
+                    <div class="danger-zone-header">
+                        <i class="bi bi-exclamation-octagon-fill"></i> Data Reset & Maintenance
+                    </div>
+                    <p class="text-muted small mb-3">
+                        Safely clear specific historical logs. Saved resumes created in the AI Resume Builder will NOT be affected.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-reset-table" data-table="mock_interviews" data-label="Mock Interview History">
+                            Reset Mock Interviews
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-reset-table" data-table="ats_checks" data-label="ATS Check Audits">
+                            Reset ATS Scans
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-reset-table" data-table="resume_audits" data-label="Resume Audits">
+                            Reset Resume Audits
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: System Info -->
+        <div class="settings-tab-pane d-none" id="tab-system">
+            <div class="settings-panel-card">
+                <div class="settings-section-header">
+                    <h3 class="settings-section-title">
+                        <i class="bi bi-shield-check" style="color:var(--sv-terracotta);"></i>
+                        System Architecture & Specifications
+                    </h3>
+                    <div class="settings-section-desc">Active platform components, database path, and framework stack.</div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0 small">
+                        <tbody>
+                            <tr>
+                                <th style="width:30%; background:var(--sv-card);">Platform Name</th>
+                                <td><strong>Skillverse AI Ecosystem</strong></td>
+                            </tr>
+                            <tr>
+                                <th style="background:var(--sv-card);">Platform Version</th>
+                                <td>v1.0 (PRO) &bull; Knowledge & Growth Edition</td>
+                            </tr>
+                            <tr>
+                                <th style="background:var(--sv-card);">Backend Framework</th>
+                                <td>Python 3.10+ with Flask REST API</td>
+                            </tr>
+                            <tr>
+                                <th style="background:var(--sv-card);">Database Layer</th>
+                                <td>SQLite 3 (<code>{{ storage.db_path }}</code>)</td>
+                            </tr>
+                            <tr>
+                                <th style="background:var(--sv-card);">AI Cloud Provider</th>
+                                <td>Groq Cloud High-Speed Inference API</td>
+                            </tr>
+                            <tr>
+                                <th style="background:var(--sv-card);">Color Theme Palette</th>
+                                <td>Warm Beige (#F3E9D9) &bull; Terracotta (#C46B4F) &bull; Charcoal (#403B36) &bull; Ivory (#FFFCF6)</td>
+                            </tr>
+                            <tr>
+                                <th style="background:var(--sv-card);">Operational Modules</th>
+                                <td>
+                                    <span class="badge bg-light text-dark border me-1">Interview Question Generator</span>
+                                    <span class="badge bg-light text-dark border me-1">AI Resume Analyzer</span>
+                                    <span class="badge bg-light text-dark border me-1">AI Resume Builder</span>
+                                    <span class="badge bg-light text-dark border me-1">Mock Interview Simulator</span>
+                                    <span class="badge bg-light text-dark border me-1">ATS Resume Checker</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Bar -->
+        <div class="d-flex justify-content-end mb-5">
+            <button type="submit" class="btn btn-cp-primary py-2 px-4 d-flex align-items-center gap-2" id="btnSaveBottom">
+                <i class="bi bi-check2-circle"></i> Save All Settings
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+<!-- Toast Alert -->
+<div class="settings-alert-toast" id="settingsToast">
+    <div class="alert alert-success d-flex align-items-center gap-2 shadow border-0 mb-0" style="border-radius:12px;">
+        <i class="bi bi-check-circle-fill fs-5"></i>
+        <div class="fw-semibold small" id="toastMessage">Settings saved successfully!</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // -------------------------------------------------------------------------
+    // Tab Navigation Switching
+    // -------------------------------------------------------------------------
+    const tabs = document.querySelectorAll('.settings-nav-tab');
+    const panes = document.querySelectorAll('.settings-tab-pane');
+
+    function switchTab(targetId) {
+        if (!targetId) return;
+        if (!targetId.startsWith('tab-')) targetId = 'tab-' + targetId;
+        const matchingTab = Array.from(tabs).find(t => t.getAttribute('data-tab') === targetId);
+        if (matchingTab) {
+            tabs.forEach(t => t.classList.remove('active'));
+            panes.forEach(p => p.classList.add('d-none'));
+
+            matchingTab.classList.add('active');
+            const targetPane = document.getElementById(targetId);
+            if (targetPane) targetPane.classList.remove('d-none');
+        }
+    }
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetId = tab.getAttribute('data-tab');
+            switchTab(targetId);
+        });
+    });
+
+    // Support URL query parameter (?tab=profile) and hash (#tab-profile)
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTab = urlParams.get('tab') || window.location.hash.replace('#', '');
+    if (initialTab) {
+        switchTab(initialTab);
+    }
+
+    // -------------------------------------------------------------------------
+    // Appearance & Display Preferences Controller
+    // -------------------------------------------------------------------------
+    function syncAppearanceUI() {
+        if (!window.SkillverseTheme) return;
+
+        const currentThemeSetting = window.SkillverseTheme.getThemeSetting();
+        const effectiveTheme = window.SkillverseTheme.getEffectiveTheme();
+        const systemPref = window.SkillverseTheme.getSystemTheme();
+        const currentFont = window.SkillverseTheme.getFontSize();
+
+        // Synchronize hidden form inputs
+        const inputTheme = document.getElementById('inputThemeMode');
+        const inputFont = document.getElementById('inputFontSize');
+        if (inputTheme) inputTheme.value = currentThemeSetting;
+        if (inputFont) inputFont.value = currentFont;
+
+        // Theme Cards UI Synchronization
+        const themeCards = {
+            'light': document.getElementById('themeCardLight'),
+            'dark': document.getElementById('themeCardDark'),
+            'system': document.getElementById('themeCardSystem')
+        };
+        const indicators = {
+            'light': document.getElementById('indicatorLight'),
+            'dark': document.getElementById('indicatorDark'),
+            'system': document.getElementById('indicatorSystem')
+        };
+
+        ['light', 'dark', 'system'].forEach(k => {
+            const card = themeCards[k];
+            const ind = indicators[k];
+            if (card && ind) {
+                if (k === currentThemeSetting) {
+                    card.classList.add('active');
+                    ind.innerHTML = '<i class="bi bi-check-circle-fill text-primary" style="color:var(--sv-terracotta) !important;"></i>';
+                } else {
+                    card.classList.remove('active');
+                    ind.innerHTML = '<i class="bi bi-circle"></i>';
+                }
+            }
+        });
+
+        // Detected OS dynamic badge
+        const osLabel = document.getElementById('detectedOsLabel');
+        if (osLabel) {
+            osLabel.textContent = systemPref === 'dark' ? 'Dark Mode' : 'Light Mode';
+        }
+
+        const activeThemeBadge = document.getElementById('activeThemeBadge');
+        if (activeThemeBadge) {
+            let labelText = '';
+            if (currentThemeSetting === 'system') {
+                labelText = `System Default (${effectiveTheme === 'dark' ? 'Dark Detected' : 'Light Detected'})`;
+            } else if (currentThemeSetting === 'dark') {
+                labelText = 'Dark Mode';
+            } else {
+                labelText = 'Light Mode';
+            }
+            activeThemeBadge.innerHTML = `<i class="bi bi-circle-fill" style="color:var(--sv-terracotta); font-size:0.6rem;"></i> Active: ${labelText}`;
+        }
+
+        // Font Size Cards UI Synchronization
+        const fontCards = {
+            'small': document.getElementById('fontCardSmall'),
+            'medium': document.getElementById('fontCardMedium'),
+            'large': document.getElementById('fontCardLarge')
+        };
+        const fontIndicators = {
+            'small': document.getElementById('fontIndicatorSmall'),
+            'medium': document.getElementById('fontIndicatorMedium'),
+            'large': document.getElementById('fontIndicatorLarge')
+        };
+
+        ['small', 'medium', 'large'].forEach(size => {
+            const card = fontCards[size];
+            const ind = fontIndicators[size];
+            if (card && ind) {
+                if (size === currentFont) {
+                    card.classList.add('active');
+                    ind.innerHTML = '<i class="bi bi-check-circle-fill text-primary" style="color:var(--sv-terracotta) !important;"></i>';
+                } else {
+                    card.classList.remove('active');
+                    ind.innerHTML = '<i class="bi bi-circle"></i>';
+                }
+            }
+        });
+
+        const activeFontBadge = document.getElementById('activeFontBadge');
+        if (activeFontBadge) {
+            const fontMap = { 'small': 'Small (14.5px)', 'medium': 'Medium (16px)', 'large': 'Large (17.5px)' };
+            activeFontBadge.innerHTML = `<i class="bi bi-fonts"></i> ${fontMap[currentFont] || 'Medium (16px)'}`;
+        }
+
+        // Live Preview Badges
+        const pillThemeText = document.getElementById('previewPillThemeText');
+        if (pillThemeText) {
+            pillThemeText.textContent = effectiveTheme === 'dark' ? 'Dark Palette Active' : 'Light Palette Active';
+        }
+        const pillFontText = document.getElementById('previewPillFontText');
+        if (pillFontText) {
+            const fontMap = { 'small': '14.5px Small', 'medium': '16px Medium', 'large': '17.5px Large' };
+            pillFontText.textContent = fontMap[currentFont] || '16px Medium';
+        }
+    }
+
+    // Attach click listeners to Theme Cards
+    document.querySelectorAll('.theme-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const targetTheme = card.getAttribute('data-theme-val');
+            if (window.SkillverseTheme && targetTheme) {
+                window.SkillverseTheme.setTheme(targetTheme);
+                syncAppearanceUI();
+                const displayNames = { 'light': 'Light Mode', 'dark': 'Dark Mode', 'system': 'System Default' };
+                showToast(`Applied ${displayNames[targetTheme] || targetTheme}`);
+            }
+        });
+    });
+
+    // Attach click listeners to Font Size Cards
+    document.querySelectorAll('.font-size-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const targetSize = card.getAttribute('data-size-val');
+            if (window.SkillverseTheme && targetSize) {
+                window.SkillverseTheme.setFontSize(targetSize);
+                syncAppearanceUI();
+                const displayNames = { 'small': 'Small (14.5px)', 'medium': 'Medium (16px)', 'large': 'Large (17.5px)' };
+                showToast(`Font scaled to ${displayNames[targetSize] || targetSize}`);
+            }
+        });
+    });
+
+    // Listen to theme & font size change events
+    window.addEventListener('skillverse:theme-changed', syncAppearanceUI);
+    window.addEventListener('skillverse:font-size-changed', syncAppearanceUI);
+
+    // Initial appearance sync on load
+    syncAppearanceUI();
+
+    // -------------------------------------------------------------------------
+    // General Settings Controls
+    // -------------------------------------------------------------------------
+    const tempRange = document.getElementById('tempRange');
+    const tempDisplay = document.getElementById('tempDisplay');
+    if (tempRange && tempDisplay) {
+        tempRange.addEventListener('input', () => {
+            tempDisplay.textContent = tempRange.value;
+        });
+    }
+
+    // Toast notification helper
+    function showToast(msg) {
+        const toast = document.getElementById('settingsToast');
+        const text = document.getElementById('toastMessage');
+        text.textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3200);
+    }
+
+    // Form submission
+    const form = document.getElementById('settingsForm');
+    const btnTop = document.getElementById('btnSaveTop');
+    const btnBottom = document.getElementById('btnSaveBottom');
+
+    async function handleSaveSettings() {
+        if (window.SkillverseTheme) {
+            const inputTheme = document.getElementById('inputThemeMode');
+            const inputFont = document.getElementById('inputFontSize');
+            if (inputTheme) inputTheme.value = window.SkillverseTheme.getThemeSetting();
+            if (inputFont) inputFont.value = window.SkillverseTheme.getFontSize();
+        }
+
+        const formData = new FormData(form);
+        const payload = {};
+        formData.forEach((value, key) => {
+            payload[key] = value;
+        });
+
+        if (btnTop) {
+            btnTop.disabled = true;
+            btnTop.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+        }
+        if (btnBottom) {
+            btnBottom.disabled = true;
+            btnBottom.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+        }
+
+        try {
+            const res = await fetch('/api/settings/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                showToast("All settings & preferences saved successfully!");
+            } else {
+                alert("Error saving settings: " + (data.message || "Unknown error"));
+            }
+        } catch (err) {
+            alert("Network error saving settings: " + err.message);
+        } finally {
+            if (btnTop) {
+                btnTop.disabled = false;
+                btnTop.innerHTML = '<i class="bi bi-check2-circle"></i> Save Settings';
+            }
+            if (btnBottom) {
+                btnBottom.disabled = false;
+                btnBottom.innerHTML = '<i class="bi bi-check2-circle"></i> Save All Settings';
+            }
+        }
+    }
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleSaveSettings();
+    });
+
+    if (btnTop) {
+        btnTop.addEventListener('click', () => {
+            handleSaveSettings();
+        });
+    }
+
+    // Test AI Connection button
+    const btnTestAi = document.getElementById('btnTestAi');
+    const testAiSpinner = document.getElementById('testAiSpinner');
+    const testAiIcon = document.getElementById('testAiIcon');
+    const latencyBadge = document.getElementById('latencyBadge');
+    const latencyVal = document.getElementById('latencyVal');
+    const alertBox = document.getElementById('aiTestResultBox');
+    const alertText = document.getElementById('aiTestResultText');
+
+    if (btnTestAi) {
+        btnTestAi.addEventListener('click', async () => {
+            btnTestAi.disabled = true;
+            testAiSpinner.classList.remove('d-none');
+            testAiIcon.classList.add('d-none');
+            alertBox.classList.add('d-none');
+
+            try {
+                const model = document.getElementById('preferredModelSelect').value;
+                const res = await fetch('/api/settings/test-ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: model })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    latencyVal.textContent = data.latency_ms;
+                    latencyBadge.classList.remove('d-none');
+                    alertText.textContent = `Ping successful! Connected to Groq (${data.model}) in ${data.latency_ms}ms. AI inference is optimal.`;
+                    alertBox.className = "alert alert-success mb-4 small";
+                    alertBox.classList.remove('d-none');
+                } else {
+                    alertText.textContent = `Ping error: ${data.message}`;
+                    alertBox.className = "alert alert-danger mb-4 small";
+                    alertBox.classList.remove('d-none');
+                }
+            } catch (err) {
+                alertText.textContent = `Network failure testing AI: ${err.message}`;
+                alertBox.className = "alert alert-danger mb-4 small";
+                alertBox.classList.remove('d-none');
+            } finally {
+                btnTestAi.disabled = false;
+                testAiSpinner.classList.add('d-none');
+                testAiIcon.classList.remove('d-none');
+            }
+        });
+    }
+
+    // Clear Uploads Cache button
+    const btnClearUploads = document.getElementById('btnClearUploads');
+    if (btnClearUploads) {
+        btnClearUploads.addEventListener('click', async () => {
+            if (!confirm("Clear all temporary uploaded documents in the uploads folder? Database records will remain safe.")) return;
+
+            btnClearUploads.disabled = true;
+            try {
+                const res = await fetch('/api/settings/clear-cache', { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    document.getElementById('uploadsCount').textContent = '0';
+                    document.getElementById('uploadsSize').textContent = '0';
+                    showToast(`Cleared ${data.files_deleted} temporary files (${data.bytes_freed_kb} KB freed)`);
+                }
+            } catch (err) {
+                alert("Error clearing uploads: " + err.message);
+            } finally {
+                btnClearUploads.disabled = false;
+            }
+        });
+    }
+
+    // Reset Table buttons
+    document.querySelectorAll('.btn-reset-table').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const table = btn.getAttribute('data-table');
+            const label = btn.getAttribute('data-label');
+            if (!confirm(`Are you sure you want to permanently clear all records for "${label}"? This cannot be undone.`)) return;
+
+            try {
+                const res = await fetch('/api/settings/clear-history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ table: table })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast(`Cleared ${data.records_deleted} records from ${label}`);
+                    setTimeout(() => location.reload(), 1200);
+                }
+            } catch (err) {
+                alert("Error clearing table: " + err.message);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

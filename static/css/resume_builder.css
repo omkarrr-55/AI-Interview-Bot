@@ -216,12 +216,60 @@
 
 /* 5. A4 Live Preview Sheet Container */
 .preview-sheet-wrapper {
-  background: var(--sv-charcoal);
+  background: #2d2722;
+  border: 1px solid var(--sv-border);
   border-radius: var(--sv-radius-md);
   padding: 1.5rem;
   box-shadow: var(--sv-shadow-md);
   display: flex;
   justify-content: center;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+html[data-theme="dark"] .preview-sheet-wrapper {
+  background: #0d0b0a;
+  border-color: #2b251f;
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+/* Resume Sheet Palette Toggle */
+.resume-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--sv-surface-warm);
+  border: 1px solid var(--sv-border);
+  border-radius: var(--sv-radius-sm);
+  padding: 2px;
+  gap: 2px;
+}
+
+.resume-theme-toggle .btn {
+  border: none;
+  border-radius: 5px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.22rem 0.6rem;
+  color: var(--sv-text-secondary);
+  background: transparent;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.resume-theme-toggle .btn:hover {
+  color: var(--sv-charcoal);
+}
+
+.resume-theme-toggle .btn.active {
+  background: var(--sv-surface);
+  color: var(--sv-terracotta);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme="dark"] .resume-theme-toggle .btn.active {
+  background: #28221c;
+  color: #d97b5e;
 }
 
 .resume-paper {
@@ -236,7 +284,7 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 9.5pt;
   line-height: 1.45;
-  transition: all 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
 }
 
 /* Template 1: Modern Clean (Terracotta Accent) */
@@ -254,7 +302,7 @@
 .template-modern .candidate-name {
   font-size: 20pt;
   font-weight: 800;
-  color: var(--sv-charcoal);
+  color: #2b2724;
   letter-spacing: -0.02em;
   margin: 0;
   text-transform: uppercase;
@@ -279,7 +327,7 @@
 .template-modern .resume-section-title {
   font-size: 11pt;
   font-weight: 800;
-  color: var(--sv-charcoal);
+  color: #2b2724;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 1.5px solid #e2e8f0;
@@ -490,6 +538,176 @@
   border: 1px solid #e2e8f0;
 }
 
+/* ==========================================================================
+   Black Theme Resume Sheet Architecture (Dark Mode)
+   ========================================================================== */
+
+.resume-paper.theme-dark,
+html[data-theme="dark"] .resume-paper:not(.theme-light) {
+  background: #141210 !important;
+  color: #e5ded4 !important;
+  border: 1px solid #332b23;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7);
+}
+
+/* Common Black Theme Elements */
+.resume-paper.theme-dark .resume-entry-top,
+html[data-theme="dark"] .resume-paper:not(.theme-light) .resume-entry-top {
+  color: #f7f1e9 !important;
+}
+
+.resume-paper.theme-dark .resume-entry-sub,
+html[data-theme="dark"] .resume-paper:not(.theme-light) .resume-entry-sub {
+  color: #aba196 !important;
+}
+
+.resume-paper.theme-dark .resume-bullets,
+html[data-theme="dark"] .resume-paper:not(.theme-light) .resume-bullets {
+  color: #ded6cb !important;
+}
+
+.resume-paper.theme-dark .skill-pill,
+html[data-theme="dark"] .resume-paper:not(.theme-light) .skill-pill {
+  background: #241f1a !important;
+  color: #f0e8de !important;
+  border-color: #3d3429 !important;
+}
+
+/* Template 1: Modern Clean - Black Theme */
+.resume-paper.theme-dark.template-modern,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-modern {
+  color: #e5ded4;
+}
+
+.resume-paper.theme-dark.template-modern .resume-header,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-modern .resume-header {
+  border-bottom: 2.5px solid var(--sv-terracotta);
+}
+
+.resume-paper.theme-dark.template-modern .candidate-name,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-modern .candidate-name {
+  color: #ffffff !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.resume-paper.theme-dark.template-modern .candidate-title,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-modern .candidate-title {
+  color: #d97b5e !important;
+}
+
+.resume-paper.theme-dark.template-modern .contact-row,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-modern .contact-row {
+  color: #aba196 !important;
+}
+
+.resume-paper.theme-dark.template-modern .resume-section-title,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-modern .resume-section-title {
+  color: #ffffff !important;
+  border-bottom: 1.5px solid #2e2720;
+}
+
+.resume-paper.theme-dark.template-modern .resume-section-title::before,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-modern .resume-section-title::before {
+  background: #d97b5e;
+}
+
+/* Template 2: Classic Executive - Black Theme */
+.resume-paper.theme-dark.template-classic,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-classic {
+  color: #e5ded4;
+}
+
+.resume-paper.theme-dark.template-classic .resume-header,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-classic .resume-header {
+  border-bottom: 1.5px solid #d97b5e;
+}
+
+.resume-paper.theme-dark.template-classic .candidate-name,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-classic .candidate-name {
+  color: #ffffff !important;
+}
+
+.resume-paper.theme-dark.template-classic .candidate-title,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-classic .candidate-title {
+  color: #d97b5e !important;
+}
+
+.resume-paper.theme-dark.template-classic .contact-row,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-classic .contact-row {
+  color: #aba196 !important;
+}
+
+.resume-paper.theme-dark.template-classic .resume-section-title,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-classic .resume-section-title {
+  color: #ffffff !important;
+  border-bottom: 1px solid #3d3429;
+}
+
+/* Template 3: Minimalist ATS - Black Theme */
+.resume-paper.theme-dark.template-ats,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-ats {
+  color: #f0eae1;
+}
+
+.resume-paper.theme-dark.template-ats .resume-header,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-ats .resume-header {
+  border-bottom: 1.5px solid #f0eae1;
+}
+
+.resume-paper.theme-dark.template-ats .candidate-name,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-ats .candidate-name {
+  color: #ffffff !important;
+}
+
+.resume-paper.theme-dark.template-ats .candidate-title,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-ats .candidate-title {
+  color: #d97b5e !important;
+}
+
+.resume-paper.theme-dark.template-ats .contact-row,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-ats .contact-row {
+  color: #aba196 !important;
+}
+
+.resume-paper.theme-dark.template-ats .resume-section-title,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-ats .resume-section-title {
+  color: #ffffff !important;
+  border-bottom: 1.5px solid #f0eae1;
+}
+
+/* Template 4: Tech Sleek - Black Theme */
+.resume-paper.theme-dark.template-tech,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-tech {
+  color: #e5ded4;
+}
+
+.resume-paper.theme-dark.template-tech .resume-header,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-tech .resume-header {
+  background: #1c1815;
+  border-bottom: 2px solid #d97b5e;
+}
+
+.resume-paper.theme-dark.template-tech .candidate-name,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-tech .candidate-name {
+  color: #ffffff !important;
+}
+
+.resume-paper.theme-dark.template-tech .candidate-title,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-tech .candidate-title {
+  color: #d97b5e !important;
+}
+
+.resume-paper.theme-dark.template-tech .contact-row,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-tech .contact-row {
+  color: #aba196 !important;
+}
+
+.resume-paper.theme-dark.template-tech .resume-section-title,
+html[data-theme="dark"] .resume-paper:not(.theme-light).template-tech .resume-section-title {
+  color: #ffffff !important;
+  background: #241f1a;
+}
+
 /* 6. Print Engine Override */
 @media print {
   body * {
@@ -518,5 +736,7 @@
     padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }

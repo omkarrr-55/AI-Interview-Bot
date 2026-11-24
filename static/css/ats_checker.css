@@ -1,0 +1,348 @@
+/* ==========================================================================
+   Skillverse Dedicated ATS Resume Checker Stylesheet
+   Warm Neutral & Terracotta Palette
+   ========================================================================== */
+
+/* 1. Wrapper & Header Banner */
+.ats-wrapper {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding-bottom: 3.5rem;
+}
+
+.ats-banner {
+  background: linear-gradient(135deg, rgba(196, 107, 79, 0.08) 0%, rgba(247, 235, 230, 0.6) 100%);
+  border: 1px solid var(--sv-border);
+  border-radius: var(--sv-radius-lg);
+  padding: 1.75rem 2rem;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.ats-banner::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(196, 107, 79, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* 2. Upload & Input Workspace */
+.ats-input-card {
+  background: var(--sv-surface);
+  border: 1px solid var(--sv-border);
+  border-radius: var(--sv-radius-lg);
+  box-shadow: var(--sv-shadow-sm);
+  padding: 2.25rem;
+  margin-bottom: 2rem;
+  transition: box-shadow 0.25s ease;
+}
+
+.ats-input-card:hover {
+  box-shadow: var(--sv-shadow-md);
+}
+
+.ats-dropzone {
+  border: 2px dashed var(--sv-border);
+  border-radius: var(--sv-radius-md);
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  background: var(--sv-card);
+  cursor: pointer;
+  transition: all 0.22s ease;
+  position: relative;
+}
+
+.ats-dropzone:hover, .ats-dropzone.dragover {
+  border-color: var(--sv-terracotta);
+  background: var(--sv-terracotta-light);
+}
+
+.dropzone-icon {
+  font-size: 2.5rem;
+  color: var(--sv-terracotta);
+  margin-bottom: 0.75rem;
+}
+
+.quick-job-chip {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: var(--sv-card);
+  border: 1px solid var(--sv-border);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--sv-charcoal);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 0.4rem;
+  margin-bottom: 0.45rem;
+}
+
+.quick-job-chip:hover {
+  border-color: var(--sv-terracotta);
+  color: var(--sv-terracotta);
+  background: var(--sv-terracotta-light);
+}
+
+/* 3. Scorecard Hero & Gauges */
+.ats-scorecard {
+  background: var(--sv-surface);
+  border: 1px solid var(--sv-border);
+  border-radius: var(--sv-radius-lg);
+  box-shadow: var(--sv-shadow-md);
+  overflow: hidden;
+  margin-bottom: 2rem;
+  animation: fadeIn 0.35s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ats-scorecard-header {
+  background: linear-gradient(135deg, #FAF6F0 0%, #F5ECE3 100%);
+  border-bottom: 1px solid var(--sv-border);
+  padding: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.ats-gauge-circle {
+  width: 135px;
+  height: 135px;
+  border-radius: 50%;
+  background: var(--sv-surface);
+  border: 6px solid var(--sv-terracotta);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(196, 107, 79, 0.2);
+}
+
+.ats-gauge-num {
+  font-family: 'Outfit', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--sv-charcoal);
+  line-height: 1;
+}
+
+.ats-gauge-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--sv-muted);
+  letter-spacing: 0.05em;
+  margin-top: 0.25rem;
+}
+
+/* Dimension Progress Meters */
+.dim-progress-wrap {
+  margin-bottom: 1rem;
+}
+
+.dim-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--sv-charcoal);
+  margin-bottom: 0.35rem;
+}
+
+.dim-progress-bar {
+  height: 8px;
+  background: var(--sv-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.dim-progress-fill {
+  height: 100%;
+  background: var(--sv-terracotta);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+/* ATS Reality Disclaimer */
+.ats-disclaimer-box {
+  background: #FFFBF5;
+  border: 1px solid rgba(212, 139, 56, 0.35);
+  border-left: 4px solid var(--sv-amber);
+  border-radius: var(--sv-radius-sm);
+  padding: 0.85rem 1.15rem;
+  font-size: 0.82rem;
+  color: var(--sv-charcoal);
+  line-height: 1.5;
+  margin-bottom: 1.75rem;
+}
+
+/* 4. Diagnostic Severity Blocks */
+.diag-card {
+  border-radius: var(--sv-radius-md);
+  padding: 1.15rem 1.35rem;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+}
+
+.diag-card.critical {
+  background: #FFF5F5;
+  border-color: rgba(192, 77, 67, 0.3);
+}
+
+.diag-card.warning {
+  background: #FFFDF5;
+  border-color: rgba(212, 139, 56, 0.3);
+}
+
+.diag-card.passed {
+  background: #F6FBF8;
+  border-color: rgba(79, 128, 100, 0.3);
+}
+
+.diag-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin-bottom: 0.65rem;
+}
+
+.diag-header.critical { color: var(--sv-red); }
+.diag-header.warning { color: var(--sv-amber); }
+.diag-header.passed { color: var(--sv-green); }
+
+.diag-list {
+  margin-bottom: 0;
+  padding-left: 1.25rem;
+  font-size: 0.84rem;
+  color: var(--sv-charcoal);
+  line-height: 1.5;
+}
+
+/* 5. Keyword Overlap Chips */
+.keyword-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.kw-card-matched {
+  background: #F6FBF8;
+  border: 1px solid rgba(79, 128, 100, 0.25);
+  border-radius: var(--sv-radius-md);
+  padding: 1.25rem;
+}
+
+.kw-card-missing {
+  background: #FFF9F7;
+  border: 1px solid rgba(196, 107, 79, 0.25);
+  border-radius: var(--sv-radius-md);
+  padding: 1.25rem;
+}
+
+.kw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-right: 0.35rem;
+  margin-bottom: 0.45rem;
+}
+
+.kw-chip.matched {
+  background: rgba(79, 128, 100, 0.15);
+  color: var(--sv-green);
+  border: 1px solid rgba(79, 128, 100, 0.3);
+}
+
+.kw-chip.missing {
+  background: rgba(196, 107, 79, 0.12);
+  color: var(--sv-terracotta);
+  border: 1px solid rgba(196, 107, 79, 0.3);
+}
+
+/* 6. Plain Text ATS Simulation Terminal */
+.ats-terminal-box {
+  background: #2B2724;
+  color: #E8E0D5;
+  border-radius: var(--sv-radius-md);
+  padding: 1.25rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  max-height: 320px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  border: 1px solid #403B36;
+}
+
+/* 7. Actionable Fix Checklist */
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--sv-radius-sm);
+  background: var(--sv-card);
+  border: 1px solid var(--sv-border);
+  margin-bottom: 0.65rem;
+}
+
+.checklist-priority-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.checklist-priority-badge.critical {
+  background: rgba(192, 77, 67, 0.15);
+  color: var(--sv-red);
+}
+
+.checklist-priority-badge.warning {
+  background: rgba(212, 139, 56, 0.15);
+  color: var(--sv-amber);
+}
+
+.checklist-priority-badge.pass {
+  background: rgba(79, 128, 100, 0.15);
+  color: var(--sv-green);
+}
+
+/* History Modal items */
+.history-ats-item {
+  border: 1px solid var(--sv-border);
+  border-radius: var(--sv-radius-md);
+  padding: 1rem 1.25rem;
+  background: var(--sv-card);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.history-ats-item:hover {
+  background: var(--sv-surface);
+  border-color: var(--sv-terracotta);
+}

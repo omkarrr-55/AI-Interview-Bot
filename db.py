@@ -79,6 +79,48 @@ def init_db(db_path=DB_FILE):
         )
     """)
 
+    # 5. ATS Resume Checks table (Phase 3 Dedicated ATS Checker)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS ats_checks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT NOT NULL,
+            target_job_title TEXT DEFAULT '',
+            ats_score INTEGER NOT NULL,
+            ats_grade TEXT NOT NULL,
+            format_score INTEGER NOT NULL,
+            keyword_score INTEGER NOT NULL,
+            section_score INTEGER NOT NULL,
+            check_report_json TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # 6. Platform Settings & Preferences table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS platform_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Seed default platform settings if table is empty
+    default_settings = [
+        ("candidate_name", "Omkar"),
+        ("candidate_email", ""),
+        ("candidate_phone", ""),
+        ("candidate_location", ""),
+        ("target_role", "Full Stack Developer"),
+        ("experience_level", "Mid-Level"),
+        ("preferred_model", "llama-3.3-70b-versatile"),
+        ("ai_rigor", "Balanced"),
+        ("evaluation_temperature", "0.4"),
+        ("auto_cleanup_uploads", "false"),
+        ("theme_mode", "system"),
+        ("font_size", "medium")
+    ]
+    cursor.executemany("INSERT OR IGNORE INTO platform_settings (key, value) VALUES (?, ?)", default_settings)
+
     conn.commit()
     conn.close()
 
@@ -347,6 +389,106 @@ def delete_mock_interview(interview_id, db_path=DB_FILE):
 
 
 # ---------------------------------------------------------------------------
+# ATS Resume Checker Operations (Phase 3 Dedicated Module)
+# ---------------------------------------------------------------------------
+
+def save_ats_check(filename, target_job_title, ats_score, ats_grade,
+                   format_score, keyword_score, section_score, check_report_dict, db_path=DB_FILE):
+    """Records an ATS parsing simulation and audit report in SQLite."""
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    report_str = json.dumps(check_report_dict if isinstance(check_report_dict, dict) else {}, ensure_ascii=False)
+
+    cursor.execute("""
+        INSERT INTO ats_checks (
+            filename, target_job_title, ats_score, ats_grade,
+            format_score, keyword_score, section_score, check_report_json, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        filename, target_job_title or "General Industry Benchmark",
+        int(ats_score), ats_grade, int(format_score), int(keyword_score), int(section_score),
+        report_str, now_str
+    ))
+
+    check_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return check_id
+
+
+def get_ats_check(check_id, db_path=DB_FILE):
+    """Fetches details of a specific ATS check report."""
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM ats_checks WHERE id = ?", (check_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    try:
+        report = json.loads(row["check_report_json"])
+    except Exception:
+        report = {}
+
+    return {
+        "id": row["id"],
+        "filename": row["filename"],
+        "target_job_title": row["target_job_title"],
+        "ats_score": row["ats_score"],
+        "ats_grade": row["ats_grade"],
+        "format_score": row["format_score"],
+        "keyword_score": row["keyword_score"],
+        "section_score": row["section_score"],
+        "report": report,
+        "created_at": row["created_at"]
+    }
+
+
+def list_ats_checks(limit=20, db_path=DB_FILE):
+    """Lists recent ATS checks with score summaries."""
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, filename, target_job_title, ats_score, ats_grade,
+               format_score, keyword_score, section_score, created_at
+        FROM ats_checks
+        ORDER BY created_at DESC
+        LIMIT ?
+    """, (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [
+        {
+            "id": r["id"],
+            "filename": r["filename"],
+            "target_job_title": r["target_job_title"],
+            "ats_score": r["ats_score"],
+            "ats_grade": r["ats_grade"],
+            "format_score": r["format_score"],
+            "keyword_score": r["keyword_score"],
+            "section_score": r["section_score"],
+            "created_at": r["created_at"]
+        }
+        for r in rows
+    ]
+
+
+def delete_ats_check(check_id, db_path=DB_FILE):
+    """Deletes an ATS check record by ID."""
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM ats_checks WHERE id = ?", (check_id,))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return deleted
+
+
+# ---------------------------------------------------------------------------
 # Dashboard Analytics Summary
 # ---------------------------------------------------------------------------
 
@@ -376,6 +518,12 @@ def get_dashboard_stats(db_path=DB_FILE):
     total_interviews = interview_stats[0] if interview_stats else 0
     avg_interview_score = round(interview_stats[1], 1) if interview_stats and interview_stats[1] is not None else 80.0
 
+    # ATS Checks stats
+    cursor.execute("SELECT COUNT(*), AVG(ats_score) FROM ats_checks")
+    ats_stats = cursor.fetchone()
+    total_ats_checks = ats_stats[0] if ats_stats else 0
+    avg_ats_check_score = round(ats_stats[1], 1) if ats_stats and ats_stats[1] is not None else 80.0
+
     conn.close()
 
     return {
@@ -385,5 +533,98 @@ def get_dashboard_stats(db_path=DB_FILE):
         "total_resumes": total_resumes,
         "total_question_sets": total_questions,
         "total_interviews": total_interviews,
-        "avg_interview_score": avg_interview_score
+        "avg_interview_score": avg_interview_score,
+        "total_ats_checks": total_ats_checks,
+        "avg_ats_check_score": avg_ats_check_score
     }
+
+
+# ---------------------------------------------------------------------------
+# Platform Settings & Storage Management Operations
+# ---------------------------------------------------------------------------
+
+def get_setting(key, default=None, db_path=DB_FILE):
+    """Retrieves a single configuration setting value by key."""
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM platform_settings WHERE key = ?", (key,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["value"] if row else default
+
+
+def set_setting(key, value, db_path=DB_FILE):
+    """Inserts or updates a configuration setting value."""
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("""
+        INSERT INTO platform_settings (key, value, updated_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    """, (key, str(value), now_str))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def get_all_settings(db_path=DB_FILE):
+    """Returns all platform settings as a clean dictionary."""
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT key, value FROM platform_settings")
+    rows = cursor.fetchall()
+    conn.close()
+    return {r["key"]: r["value"] for r in rows}
+
+
+def get_storage_stats(db_path=DB_FILE):
+    """Returns database size and detailed record counts for data management."""
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+
+    db_size_bytes = os.path.getsize(db_path) if os.path.exists(db_path) else 0
+    db_size_kb = round(db_size_bytes / 1024, 1)
+
+    cursor.execute("SELECT COUNT(*) FROM resumes")
+    resumes_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM resume_audits")
+    audits_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM question_history")
+    questions_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM mock_interviews")
+    interviews_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM ats_checks")
+    ats_count = cursor.fetchone()[0]
+
+    conn.close()
+
+    return {
+        "db_size_kb": db_size_kb,
+        "db_path": db_path,
+        "resumes_count": resumes_count,
+        "audits_count": audits_count,
+        "questions_count": questions_count,
+        "interviews_count": interviews_count,
+        "ats_count": ats_count
+    }
+
+
+def clear_table_records(table_name, db_path=DB_FILE):
+    """Safely clears history records from an authorized table."""
+    allowed_tables = {"mock_interviews", "ats_checks", "question_history", "resume_audits"}
+    if table_name not in allowed_tables:
+        raise ValueError(f"Table '{table_name}' is not authorized for reset.")
+
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute(f"DELETE FROM {table_name}")
+    deleted = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return deleted
+

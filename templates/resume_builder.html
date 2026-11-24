@@ -224,11 +224,21 @@
 
     <!-- RIGHT: Live A4 Preview Sheet Column -->
     <div class="builder-preview-column">
-        <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
             <div class="small fw-bold text-muted text-uppercase" style="letter-spacing:0.05em;">
                 <i class="bi bi-eye"></i> Live A4 Print Preview
             </div>
-            <div class="small text-muted" id="previewWordCount">0 words</div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="resume-theme-toggle" role="group" aria-label="Resume Sheet Palette">
+                    <button type="button" class="btn" id="btnResumeThemeDark" title="Black Theme Resume">
+                        <i class="bi bi-moon-stars-fill"></i> Black Theme
+                    </button>
+                    <button type="button" class="btn" id="btnResumeThemeLight" title="White Paper Resume">
+                        <i class="bi bi-sun-fill"></i> White Sheet
+                    </button>
+                </div>
+                <div class="small text-muted" id="previewWordCount">0 words</div>
+            </div>
         </div>
 
         <div class="preview-sheet-wrapper">
@@ -1142,7 +1152,9 @@
             currentTemplate = this.dataset.template;
 
             const paper = document.getElementById('resumePaper');
-            paper.className = `resume-paper template-${currentTemplate}`;
+            if (paper) {
+                paper.className = `resume-paper template-${currentTemplate} theme-${currentResumeSheetTheme}`;
+            }
             showNotification(`Switched template to ${this.innerText.trim()}`);
         });
     });
@@ -1483,7 +1495,7 @@
                 document.querySelectorAll('.template-btn').forEach(b => {
                     b.classList.toggle('active', b.dataset.template === currentTemplate);
                 });
-                document.getElementById('resumePaper').className = `resume-paper template-${currentTemplate}`;
+                document.getElementById('resumePaper').className = `resume-paper template-${currentTemplate} theme-${currentResumeSheetTheme}`;
 
                 populateFormFromState();
                 modalSavedList.hide();
@@ -1562,8 +1574,60 @@
         });
     });
 
+    // -------------------------------------------------------------------------
+    // Resume Sheet Palette Engine (Black Theme vs Classic White Sheet)
+    // -------------------------------------------------------------------------
+    let currentResumeSheetTheme = localStorage.getItem('sv_resume_theme') || 
+        (window.SkillverseTheme && window.SkillverseTheme.getEffectiveTheme() === 'dark' ? 'dark' : 'light');
+
+    function applyResumeSheetTheme(theme, isUserManualAction = false) {
+        currentResumeSheetTheme = theme;
+        if (isUserManualAction) {
+            localStorage.setItem('sv_resume_theme', theme);
+            localStorage.setItem('sv_resume_theme_locked', 'true');
+        }
+
+        const paper = document.getElementById('resumePaper');
+        if (paper) {
+            paper.classList.remove('theme-dark', 'theme-light');
+            paper.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light');
+        }
+
+        const btnDark = document.getElementById('btnResumeThemeDark');
+        const btnLight = document.getElementById('btnResumeThemeLight');
+        if (btnDark && btnLight) {
+            btnDark.classList.toggle('active', theme === 'dark');
+            btnLight.classList.toggle('active', theme === 'light');
+        }
+    }
+
+    const btnResumeDark = document.getElementById('btnResumeThemeDark');
+    const btnResumeLight = document.getElementById('btnResumeThemeLight');
+    if (btnResumeDark) {
+        btnResumeDark.addEventListener('click', () => {
+            applyResumeSheetTheme('dark', true);
+            showNotification("Switched resume preview to Black Theme");
+        });
+    }
+    if (btnResumeLight) {
+        btnResumeLight.addEventListener('click', () => {
+            applyResumeSheetTheme('light', true);
+            showNotification("Switched resume preview to White Sheet");
+        });
+    }
+
+    // React to platform theme changes if not manually locked
+    window.addEventListener('skillverse:theme-changed', (e) => {
+        if (!localStorage.getItem('sv_resume_theme_locked')) {
+            applyResumeSheetTheme(e.detail.effective, false);
+        }
+    });
+
     // Initial load: check localStorage or populate initial state
     document.addEventListener('DOMContentLoaded', () => {
+        // Initialize resume sheet theme based on platform setting or saved preference
+        applyResumeSheetTheme(currentResumeSheetTheme, false);
+
         try {
             const draft = localStorage.getItem('skillverse_resume_draft');
             if (draft) {

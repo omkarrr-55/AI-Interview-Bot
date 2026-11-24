@@ -1,0 +1,549 @@
+{% extends "base.html" %}
+
+{% block title %}ATS Resume Checker &amp; Parser Simulator | Skillverse{% endblock %}
+
+{% block extra_head %}
+<!-- Dedicated ATS Checker Stylesheet -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ats_checker.css') }}">
+<!-- html2pdf.js for Scorecard Export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="ats-wrapper">
+    <!-- Top Banner -->
+    <div class="ats-banner d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge" style="background:var(--sv-terracotta); color:#fff; font-size:0.75rem; letter-spacing:0.04em;">PHASE 3 LIVE</span>
+                <span class="text-muted small fw-semibold">&bull; Automated ATS Parser Simulator</span>
+            </div>
+            <h1 class="h3 fw-bold text-dark mb-1" style="font-family:'Outfit', sans-serif;">ATS Resume Checker &amp; Parser Simulator</h1>
+            <p class="text-muted mb-0 small">
+                Test your resume against modern Applicant Tracking System parsers (Workday, Greenhouse, Lever, Taleo) to uncover layout hurdles, table scrambling, and job keyword visibility.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" onclick="openAtsHistoryModal()">
+                <i class="bi bi-clock-history"></i>
+                <span>Past Audits (<span id="saved-audits-count">0</span>)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Input Card -->
+    <div class="ats-input-card" id="ats-input-section">
+        <h2 class="h5 fw-bold text-dark mb-1" style="font-family:'Outfit', sans-serif;">Upload Resume &amp; Specify Target Role</h2>
+        <p class="text-muted small mb-4">Upload your PDF or Word resume, and optionally paste a target job description to audit keyword overlap.</p>
+
+        <form id="ats-scan-form" onsubmit="handleAtsScan(event)">
+            <div class="row g-4 mb-4">
+                <!-- Left: Resume Upload Dropzone -->
+                <div class="col-lg-6">
+                    <label class="form-label small fw-bold text-dark mb-2">
+                        1. Select Resume Document <span class="text-danger">*</span>
+                    </label>
+                    <div class="ats-dropzone" id="dropzone" onclick="document.getElementById('resume-file').click()">
+                        <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
+                        <div class="fw-bold text-dark small mb-1" id="file-chosen-text">Drag &amp; drop your resume here, or browse</div>
+                        <div class="text-muted" style="font-size:0.75rem;">Supports PDF (.pdf) and Word documents (.docx) &bull; Max 16MB</div>
+                        <input type="file" id="resume-file" name="resume" accept=".pdf,.docx" class="d-none" onchange="handleFileSelected(this)">
+                    </div>
+                </div>
+
+                <!-- Right: Target Job Description -->
+                <div class="col-lg-6">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label small fw-bold text-dark mb-0">2. Target Job Description (Optional)</label>
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="text-muted" style="font-size:0.72rem;">Samples:</span>
+                            <span class="quick-job-chip" onclick="loadJobSample('fullstack')">Full Stack</span>
+                            <span class="quick-job-chip" onclick="loadJobSample('data')">Data Science</span>
+                            <span class="quick-job-chip" onclick="loadJobSample('devops')">DevOps</span>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" id="target-role-input" class="form-control form-control-sm" placeholder="Target Job Title (e.g. Senior Software Engineer)">
+                    </div>
+                    <textarea id="target-jd-textarea" class="form-control" rows="5" placeholder="Paste the job description or required skills to test your keyword match rate against recruiter search algorithms..."></textarea>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button type="submit" id="btn-run-audit" class="btn btn-primary d-inline-flex align-items-center gap-2 px-4 py-2" style="background:var(--sv-terracotta); border-color:var(--sv-terracotta);">
+                    <i class="bi bi-shield-check"></i>
+                    <span class="fw-semibold">Run Comprehensive ATS Audit</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Audit Result Scorecard (Hidden until scan completes) -->
+    <div id="ats-report-container" style="display:none;"></div>
+</div>
+
+<!-- =====================================================================
+     PAST AUDITS HISTORY MODAL
+     ==================================================================== -->
+<div class="modal fade" id="atsHistoryModal" tabindex="-1" aria-labelledby="atsHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold" id="atsHistoryModalLabel">
+                    <i class="bi bi-clock-history me-2 text-primary" style="color:var(--sv-terracotta) !important;"></i> Past ATS Audit Reports
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="ats-history-modal-body">
+                <div class="text-center py-4 text-muted small">
+                    <div class="spinner-border text-primary spinner-border-sm mb-2" style="color:var(--sv-terracotta) !important;"></div>
+                    <div>Loading past audit history...</div>
+                </div>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================================
+     CLIENT APPLICATION LOGIC
+     ==================================================================== -->
+<script>
+const JOB_SAMPLES = {
+    fullstack: {
+        role: "Full Stack Python & React Engineer",
+        jd: "Seeking a Full Stack Engineer with deep experience in Python, Flask, React, PostgreSQL, Docker, Git, and REST APIs. Preferred experience in AWS, CI/CD pipelines, Celery, and Unit Testing. The candidate will design scalable services and build dynamic web user interfaces."
+    },
+    data: {
+        role: "Data Scientist / Machine Learning Engineer",
+        jd: "Looking for a Data Scientist proficient in Python, SQL, Pandas, PyTorch, Scikit-learn, Machine Learning, Data Visualization, and Docker. Experience with NLP, Vector Databases, AWS, and REST APIs is highly desirable."
+    },
+    devops: {
+        role: "DevOps & Cloud Platform Engineer",
+        jd: "Hiring a DevOps Engineer with expertise in Kubernetes, Docker, AWS, Linux, Terraform, CI/CD, Git, and Bash scripting. Preferred skills include Prometheus, Grafana, Python, Ansible, and Cloud Security."
+    }
+};
+
+let currentReport = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadAuditsCount();
+    initDropzone();
+});
+
+function initDropzone() {
+    const dz = document.getElementById('dropzone');
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dz.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dz.classList.add('dragover');
+        });
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+        dz.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dz.classList.remove('dragover');
+        });
+    });
+    dz.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+            document.getElementById('resume-file').files = files;
+            handleFileSelected(document.getElementById('resume-file'));
+        }
+    });
+}
+
+function handleFileSelected(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        document.getElementById('file-chosen-text').innerHTML = `
+            <span class="text-success fw-bold"><i class="bi bi-file-earmark-check"></i> ${file.name}</span>
+            <span class="text-muted fw-normal" style="font-size:0.75rem;">(${(file.size / 1024).toFixed(1)} KB)</span>
+        `;
+    }
+}
+
+function loadJobSample(key) {
+    const s = JOB_SAMPLES[key] || JOB_SAMPLES.fullstack;
+    document.getElementById('target-role-input').value = s.role;
+    document.getElementById('target-jd-textarea').value = s.jd;
+}
+
+// ---------------------------------------------------------------------------
+// Audit Execution
+// ---------------------------------------------------------------------------
+async function handleAtsScan(event) {
+    event.preventDefault();
+    const fileInput = document.getElementById('resume-file');
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alert("Please upload a .pdf or .docx resume document to audit.");
+        return;
+    }
+
+    const targetRole = document.getElementById('target-role-input').value.trim();
+    const targetJd = document.getElementById('target-jd-textarea').value.trim();
+
+    const formData = new FormData();
+    formData.append("resume", fileInput.files[0]);
+    formData.append("target_role", targetRole);
+    formData.append("job_description", targetJd);
+
+    const btn = document.getElementById('btn-run-audit');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Simulating ATS Parsers &amp; Keyword Match...';
+
+    try {
+        const resp = await fetch('/api/ats-checker/scan', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await resp.json();
+
+        if (data.status === 'success' && data.report) {
+            currentReport = data.report;
+            renderAtsReport(data.report);
+        } else {
+            alert(data.message || "Failed to complete ATS audit.");
+        }
+    } catch (err) {
+        alert("Error executing ATS audit: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-shield-check"></i> <span class="fw-semibold">Run Comprehensive ATS Audit</span>';
+    }
+}
+
+function renderAtsReport(report) {
+    const container = document.getElementById('ats-report-container');
+
+    const score = report.overall_score;
+    const dims = report.dimension_scores || {};
+    const formatScore = dims.format_parseability || 80;
+    const kwScore = dims.keyword_match || 75;
+    const secScore = dims.section_structure || 85;
+
+    // Severity pill
+    let statusClass = "bg-success-subtle text-success border border-success-subtle";
+    if (report.status_label === "Warning") statusClass = "bg-warning-subtle text-warning border border-warning-subtle";
+    else if (report.status_label === "Critical Risk") statusClass = "bg-danger-subtle text-danger border border-danger-subtle";
+
+    // Critical list
+    let criticalHtml = "";
+    if (report.issues_critical && report.issues_critical.length > 0) {
+        criticalHtml = `
+            <div class="diag-card critical">
+                <div class="diag-header critical"><i class="bi bi-x-octagon-fill"></i> Critical ATS Blockers (${report.issues_critical.length})</div>
+                <ul class="diag-list">${report.issues_critical.map(i => `<li>${i}</li>`).join('')}</ul>
+            </div>
+        `;
+    }
+
+    // Warning list
+    let warningHtml = "";
+    if (report.issues_warning && report.issues_warning.length > 0) {
+        warningHtml = `
+            <div class="diag-card warning">
+                <div class="diag-header warning"><i class="bi bi-exclamation-triangle-fill"></i> Parsing Warnings &amp; Layout Risks (${report.issues_warning.length})</div>
+                <ul class="diag-list">${report.issues_warning.map(i => `<li>${i}</li>`).join('')}</ul>
+            </div>
+        `;
+    }
+
+    // Passed list
+    let passedHtml = "";
+    if (report.issues_passed && report.issues_passed.length > 0) {
+        passedHtml = `
+            <div class="diag-card passed">
+                <div class="diag-header passed"><i class="bi bi-check-circle-fill"></i> Verified ATS Standards (${report.issues_passed.length})</div>
+                <ul class="diag-list">${report.issues_passed.map(i => `<li>${i}</li>`).join('')}</ul>
+            </div>
+        `;
+    }
+
+    // Keywords chips
+    const kw = report.keyword_audit || {};
+    const matchedChips = (kw.matched_keywords || []).map(m => `
+        <span class="kw-chip matched"><i class="bi bi-check2"></i> ${m.keyword} (${m.count}x)</span>
+    `).join('') || '<span class="text-muted small">None matched</span>';
+
+    const missingChips = (kw.missing_keywords || []).map(m => `
+        <span class="kw-chip missing"><i class="bi bi-plus-circle"></i> ${m}</span>
+    `).join('') || '<span class="text-success small fw-semibold">All target keywords present!</span>';
+
+    // Checklist
+    const checklistItems = (report.checklist || []).map(c => `
+        <div class="checklist-item">
+            <span class="checklist-priority-badge ${c.type}">${c.priority}</span>
+            <div class="small text-dark" style="line-height:1.45;">${c.action}</div>
+        </div>
+    `).join('');
+
+    const html = `
+        <div class="ats-scorecard" id="printable-ats-report">
+            <!-- Header Hero -->
+            <div class="ats-scorecard-header">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge" style="background:var(--sv-terracotta); color:#fff; font-size:0.75rem;">OFFICIAL ATS REPORT</span>
+                        <span class="badge ${statusClass}">${report.status_label}</span>
+                    </div>
+                    <h3 class="h4 fw-bold text-dark mb-1" style="font-family:'Outfit', sans-serif;">${report.filename}</h3>
+                    <div class="text-muted small">Target Role: ${report.target_role} &bull; ${report.structure_summary.word_count} Words Detected</div>
+                </div>
+
+                <!-- Gauge Circle -->
+                <div class="ats-gauge-circle">
+                    <div class="ats-gauge-num">${score}</div>
+                    <div class="ats-gauge-label">ATS Score</div>
+                </div>
+            </div>
+
+            <div class="p-4 p-md-5">
+                <!-- ATS Reality Disclaimer -->
+                <div class="ats-disclaimer-box">
+                    <div class="fw-bold small mb-1"><i class="bi bi-shield-exclamation text-warning me-1"></i> ATS Parser Reality Disclaimer</div>
+                    Applicant Tracking Systems (e.g. Workday, Taleo, Greenhouse, Lever) utilize different proprietary parsing engines. While this audit tests against universal ATS parsing hygiene standards, no tool can guarantee 100% bypass across every corporate system.
+                </div>
+
+                <!-- 3 Dimension Progress Meters -->
+                <h4 class="h6 fw-bold text-dark text-uppercase mb-3" style="letter-spacing:0.04em;">ATS Scoring Dimensions</h4>
+                <div class="row g-4 mb-4">
+                    <div class="col-md-4">
+                        <div class="dim-progress-wrap">
+                            <div class="dim-progress-header">
+                                <span>Parseability &amp; Format (40% wt)</span>
+                                <span>${formatScore}%</span>
+                            </div>
+                            <div class="dim-progress-bar"><div class="dim-progress-fill" style="width: ${formatScore}%;"></div></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="dim-progress-wrap">
+                            <div class="dim-progress-header">
+                                <span>Keyword Visibility (35% wt)</span>
+                                <span>${kwScore}%</span>
+                            </div>
+                            <div class="dim-progress-bar"><div class="dim-progress-fill" style="width: ${kwScore}%;"></div></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="dim-progress-wrap">
+                            <div class="dim-progress-header">
+                                <span>Section Taxonomy (25% wt)</span>
+                                <span>${secScore}%</span>
+                            </div>
+                            <div class="dim-progress-bar"><div class="dim-progress-fill" style="width: ${secScore}%;"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diagnostic Issues Section -->
+                <h4 class="h6 fw-bold text-dark text-uppercase mb-3" style="letter-spacing:0.04em;">Diagnostic Findings</h4>
+                ${criticalHtml}
+                ${warningHtml}
+                ${passedHtml}
+
+                <!-- Keywords Breakdown -->
+                <h4 class="h6 fw-bold text-dark text-uppercase mt-4 mb-2" style="letter-spacing:0.04em;">
+                    Target Keyword Overlap &amp; Recruiter Visibility
+                </h4>
+                <p class="text-muted small mb-3">Recruiters use keyword filtering to rank applicants. Ensure missing high-value terms appear naturally in your experience bullets:</p>
+                <div class="keyword-grid">
+                    <div class="kw-card-matched">
+                        <div class="fw-bold text-success small mb-2 d-flex align-items-center gap-1">
+                            <i class="bi bi-check-circle-fill"></i> Matched ATS Keywords (${(kw.matched_keywords || []).length})
+                        </div>
+                        <div>${matchedChips}</div>
+                    </div>
+                    <div class="kw-card-missing">
+                        <div class="fw-bold small mb-2 d-flex align-items-center gap-1" style="color:var(--sv-terracotta);">
+                            <i class="bi bi-exclamation-circle-fill"></i> Missing High-Value Keywords (${(kw.missing_keywords || []).length})
+                        </div>
+                        <div>${missingChips}</div>
+                    </div>
+                </div>
+
+                <!-- Actionable Checklist -->
+                <h4 class="h6 fw-bold text-dark text-uppercase mt-4 mb-2" style="letter-spacing:0.04em;">
+                    Actionable ATS Fix Checklist
+                </h4>
+                <div class="mb-4">${checklistItems}</div>
+
+                <!-- Plain Text Simulation View -->
+                <h4 class="h6 fw-bold text-dark text-uppercase mt-4 mb-2 d-flex align-items-center justify-content-between" style="letter-spacing:0.04em;">
+                    <span>Plain Text Parser Simulation</span>
+                    <span class="text-muted fw-normal" style="font-size:0.75rem;">(What the automated recruiter scanner reads)</span>
+                </h4>
+                <div class="ats-terminal-box">${escapeHtml(report.simulated_ats_text_preview || 'No text extracted.')}</div>
+            </div>
+        </div>
+
+        <!-- Action Toolbar -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-4">
+            <button class="btn btn-outline-secondary btn-sm" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+                <i class="bi bi-arrow-up"></i> Audit Another Document
+            </button>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-success" id="btn-save-ats" onclick="saveAtsReport()">
+                    <i class="bi bi-cloud-arrow-up"></i> Save Audit Report
+                </button>
+                <button class="btn btn-sm btn-primary" style="background:var(--sv-terracotta); border-color:var(--sv-terracotta);" onclick="downloadAtsPDF()">
+                    <i class="bi bi-file-earmark-pdf"></i> Download PDF Report
+                </button>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+    container.style.display = 'block';
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ---------------------------------------------------------------------------
+// Save & PDF Export
+// ---------------------------------------------------------------------------
+async function saveAtsReport() {
+    if (!currentReport) return;
+    const btn = document.getElementById('btn-save-ats');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+    try {
+        const resp = await fetch('/api/ats-checker/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                filename: currentReport.filename,
+                target_job_title: currentReport.target_role,
+                ats_score: currentReport.overall_score,
+                ats_grade: currentReport.ats_grade,
+                format_score: currentReport.dimension_scores.format_parseability,
+                keyword_score: currentReport.dimension_scores.keyword_match,
+                section_score: currentReport.dimension_scores.section_structure,
+                report: currentReport
+            })
+        });
+        const data = await resp.json();
+        if (data.status === 'success') {
+            btn.innerHTML = '<i class="bi bi-check2-circle"></i> Saved in Database';
+            btn.classList.remove('btn-outline-success');
+            btn.classList.add('btn-success');
+            loadAuditsCount();
+        } else {
+            alert(data.message || "Failed to save audit.");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> Save Audit Report';
+        }
+    } catch (err) {
+        alert("Error saving: " + err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> Save Audit Report';
+    }
+}
+
+function downloadAtsPDF() {
+    const element = document.getElementById('printable-ats-report');
+    if (!element) return;
+
+    const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `Skillverse_ATS_Audit_${(currentReport.filename || 'Resume').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+}
+
+// ---------------------------------------------------------------------------
+// History Modal
+// ---------------------------------------------------------------------------
+async function loadAuditsCount() {
+    try {
+        const resp = await fetch('/api/ats-checker/history');
+        const data = await resp.json();
+        if (data.status === 'success' && data.checks) {
+            document.getElementById('saved-audits-count').textContent = data.checks.length;
+        }
+    } catch (err) {
+        console.error("Error loading counts:", err);
+    }
+}
+
+async function openAtsHistoryModal() {
+    const modalEl = document.getElementById('atsHistoryModal');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    const body = document.getElementById('ats-history-modal-body');
+    body.innerHTML = `
+        <div class="text-center py-4 text-muted small">
+            <div class="spinner-border text-primary spinner-border-sm mb-2" style="color:var(--sv-terracotta) !important;"></div>
+            <div>Loading past ATS audits...</div>
+        </div>
+    `;
+
+    try {
+        const resp = await fetch('/api/ats-checker/history');
+        const data = await resp.json();
+
+        if (data.status === 'success' && data.checks && data.checks.length > 0) {
+            body.innerHTML = data.checks.map(item => `
+                <div class="history-ats-item" id="history-ats-${item.id}">
+                    <div>
+                        <div class="fw-bold text-dark small">${item.filename}</div>
+                        <div class="text-muted" style="font-size:0.75rem;">
+                            ${item.target_job_title} &bull; ${item.created_at}
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge" style="background:var(--sv-terracotta);">${item.ats_score}/100</span>
+                        <button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.75rem;" onclick="deleteAtsAudit(${item.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            body.innerHTML = `
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-shield-check fs-2 d-block mb-2 opacity-50"></i>
+                    No saved ATS audits found. Run an ATS scan and click "Save Audit Report" to track your progress over time!
+                </div>
+            `;
+        }
+    } catch (err) {
+        body.innerHTML = `<div class="text-danger small py-3">Error loading history: ${err.message}</div>`;
+    }
+}
+
+async function deleteAtsAudit(id) {
+    if (!confirm("Are you sure you want to delete this ATS audit report?")) return;
+
+    try {
+        const resp = await fetch(`/api/ats-checker/${id}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.status === 'success') {
+            const el = document.getElementById(`history-ats-${id}`);
+            if (el) el.remove();
+            loadAuditsCount();
+        } else {
+            alert(data.message || "Failed to delete record.");
+        }
+    } catch (err) {
+        alert("Error deleting record: " + err.message);
+    }
+}
+</script>
+{% endblock %}

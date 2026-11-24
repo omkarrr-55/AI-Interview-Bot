@@ -164,77 +164,39 @@
         </div>
     </div>
 
-    <!-- 5. ATS Resume Checker -->
-    <div class="feature-card">
+    <!-- 5. ATS Resume Checker (WORKING) -->
+    <div class="feature-card" style="border-top: 4px solid var(--sv-terracotta);">
         <div class="feature-card-header">
             <div class="feature-icon-wrapper grad-5">
                 <i class="bi bi-shield-check"></i>
             </div>
-            <span class="status-badge badge-soon">Coming Soon</span>
+            <span class="status-badge badge-active"><i class="bi bi-check2-circle"></i> Live Tool</span>
         </div>
         <h3 class="feature-title">ATS Resume Checker</h3>
         <p class="feature-desc">
             Scan your resume against modern Applicant Tracking System algorithms to discover parseability errors, table issues, and keyword match rates.
         </p>
         <div class="feature-card-footer">
-            <a href="{{ url_for('ats_checker') }}" class="btn-cp-outline w-100 justify-content-center">
-                <i class="bi bi-eye"></i> Preview Tool
+            <a href="{{ url_for('ats_checker') }}" class="btn-cp-primary w-100 justify-content-center">
+                <i class="bi bi-shield-check"></i> Launch ATS Checker
             </a>
         </div>
     </div>
 
-    <!-- 6. Job Description Matcher -->
-    <div class="feature-card">
-        <div class="feature-card-header">
-            <div class="feature-icon-wrapper grad-6">
-                <i class="bi bi-bullseye"></i>
-            </div>
-            <span class="status-badge badge-soon">Coming Soon</span>
-        </div>
-        <h3 class="feature-title">Job Description Matcher</h3>
-        <p class="feature-desc">
-            Paste target job requirements to calculate your profile match percentage, reveal missing skills, and receive custom tailored bullet recommendations.
-        </p>
-        <div class="feature-card-footer">
-            <a href="{{ url_for('job_matcher') }}" class="btn-cp-outline w-100 justify-content-center">
-                <i class="bi bi-eye"></i> Preview Tool
-            </a>
-        </div>
-    </div>
-
-    <!-- 7. Career Roadmap -->
-    <div class="feature-card">
-        <div class="feature-card-header">
-            <div class="feature-icon-wrapper grad-7">
-                <i class="bi bi-signpost-split-fill"></i>
-            </div>
-            <span class="status-badge badge-soon">Coming Soon</span>
-        </div>
-        <h3 class="feature-title">Career Roadmap</h3>
-        <p class="feature-desc">
-            Step-by-step personalized learning paths, industry certifications, and portfolio project suggestions designed to bridge your career skill gaps.
-        </p>
-        <div class="feature-card-footer">
-            <a href="{{ url_for('career_roadmap') }}" class="btn-cp-outline w-100 justify-content-center">
-                <i class="bi bi-eye"></i> Preview Tool
-            </a>
-        </div>
-    </div>
-
-    <!-- 8. Settings & Preferences -->
-    <div class="feature-card">
+    <!-- 6. Settings & Preferences (WORKING) -->
+    <div class="feature-card" style="border-top: 4px solid var(--sv-terracotta);">
         <div class="feature-card-header">
             <div class="feature-icon-wrapper grad-8">
                 <i class="bi bi-gear-fill"></i>
             </div>
-            <span class="status-badge badge-soon">Configuration</span>
+            <span class="status-badge badge-active"><i class="bi bi-check2-circle"></i> Live Tool</span>
         </div>
         <h3 class="feature-title">Settings & Preferences</h3>
         <p class="feature-desc">
-            Configure default target job roles, customize AI evaluation rigor, manage local uploaded resumes, and adjust model preferences.
+            Configure default target job roles, customize AI evaluation rigor, monitor Groq API latency, and maintain storage capacity.
         </p>
         <div class="feature-card-footer">
-            <a href="{{ url_for('settings_page') }}" class="btn-cp-outline w-100 justify-content-center">
+            <a href="{{ url_for('settings_page') }}" class="btn-cp-primary w-100 justify-content-center">
                 <i class="bi bi-sliders"></i> Open Settings
             </a>
         </div>
@@ -354,6 +316,46 @@
                 <div class="text-center py-4 text-muted small">
                     <i class="bi bi-mic fs-2 d-block mb-1 opacity-50"></i>
                     No mock interviews taken yet. Practice your interview skills with the <a href="{{ url_for('mock_interview') }}" style="color:var(--sv-terracotta);">Mock Interview Simulator</a>!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent ATS Checks -->
+    <div class="col-lg-12">
+        <div class="card border-0 shadow-sm" style="border-radius:16px;">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="h6 fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check text-primary" style="color:var(--sv-terracotta) !important;"></i>
+                        Recent ATS Resume Checks (Database)
+                    </h4>
+                    <a href="{{ url_for('ats_checker') }}" class="btn btn-sm btn-link text-decoration-none p-0" style="color:var(--sv-terracotta);">
+                        Audit New Resume <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+
+                {% if recent_ats_checks %}
+                <div class="row g-3">
+                    {% for ac in recent_ats_checks %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="p-3 rounded border" style="background:var(--sv-card);">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge" style="background:var(--sv-terracotta);">ATS Score: {{ ac.ats_score }}/100</span>
+                                <span class="badge bg-light text-dark border">{{ ac.ats_grade }}</span>
+                            </div>
+                            <div class="fw-bold text-dark small text-truncate">{{ ac.filename }}</div>
+                            <div class="text-muted" style="font-size:0.75rem;">{{ ac.target_job_title }}</div>
+                            <div class="text-muted mt-2" style="font-size:0.72rem;">{{ ac.created_at }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-shield-check fs-2 d-block mb-1 opacity-50"></i>
+                    No ATS audits run yet. Test your resume parseability with the <a href="{{ url_for('ats_checker') }}" style="color:var(--sv-terracotta);">ATS Resume Checker</a>!
                 </div>
                 {% endif %}
             </div>

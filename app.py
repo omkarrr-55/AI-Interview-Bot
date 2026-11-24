@@ -1,9 +1,11 @@
 from datetime import datetime
 import os
 import uuid
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+import time
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
+from groq import Groq
 from resume_parser import extract_keywords
 from question_generator import generate_questions
 from resume_analyzer import analyze_resume_file
@@ -12,6 +14,8 @@ from db import (
     save_audit, get_recent_audits,
     save_question_history, get_recent_questions,
     save_mock_interview, get_mock_interview, list_mock_interviews, delete_mock_interview,
+    save_ats_check, get_ats_check, list_ats_checks, delete_ats_check,
+    get_setting, set_setting, get_all_settings, get_storage_stats, clear_table_records,
     get_dashboard_stats
 )
 from resume_builder import (
@@ -20,11 +24,13 @@ from resume_builder import (
 from interview_simulator import (
     generate_interview_questions, evaluate_answer, compile_final_report
 )
+from ats_checker import audit_resume_for_ats
 
 # Load environment variables from .env
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'skillverse-secret-key-2026-omkar')
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -93,6 +99,7 @@ def index():
     recent_resumes = list_resumes(5)
     recent_questions = get_recent_questions(5)
     recent_interviews = list_mock_interviews(5)
+    recent_ats_checks = list_ats_checks(5)
     return render_template(
         'dashboard.html',
         active_page='dashboard',
@@ -101,6 +108,7 @@ def index():
         recent_resumes=recent_resumes,
         recent_questions=recent_questions,
         recent_interviews=recent_interviews,
+        recent_ats_checks=recent_ats_checks,
         now=datetime.now()
     )
 
@@ -113,6 +121,7 @@ def dashboard():
     recent_resumes = list_resumes(5)
     recent_questions = get_recent_questions(5)
     recent_interviews = list_mock_interviews(5)
+    recent_ats_checks = list_ats_checks(5)
     return render_template(
         'dashboard.html',
         active_page='dashboard',
@@ -121,6 +130,7 @@ def dashboard():
         recent_resumes=recent_resumes,
         recent_questions=recent_questions,
         recent_interviews=recent_interviews,
+        recent_ats_checks=recent_ats_checks,
         now=datetime.now()
     )
 
@@ -455,80 +465,269 @@ def api_mock_interview_delete(interview_id):
 
 
 # ---------------------------------------------------------------------------
-# Coming Soon Feature Routes (Phase 4 Roadmap)
+# ATS Resume Checker Routes & APIs (Phase 3 Active Tool)
 # ---------------------------------------------------------------------------
-
 
 @app.route('/ats-checker')
 def ats_checker():
+    """Active Tool: Skillverse Dedicated ATS Resume Checker & Parser Simulator."""
     return render_template(
-        'coming_soon.html',
-        feature_title='ATS Resume Checker',
-        feature_icon='bi-shield-check',
-        feature_description='Simulate enterprise Applicant Tracking System parsers (Workday, Greenhouse, Lever) to ensure 100% parseability.',
-        planned_items=[
-            'Parseability test for columns, tables, headers, and fonts',
-            'ATS compatibility score calculated on a 0-100 scale',
-            'Common parsing pitfall detection and automatic fix suggestions',
-            'Recruiter search keyword visibility audit'
-        ],
+        'ats_checker.html',
         active_page='ats_checker',
         now=datetime.now()
     )
 
 
+@app.route('/api/ats-checker/scan', methods=['POST'])
+def api_ats_checker_scan():
+    try:
+        if 'resume' not in request.files or request.files['resume'].filename == '':
+            return jsonify({"status": "error", "message": "Please upload a valid .pdf or .docx resume file."}), 400
+
+        file = request.files['resume']
+        filename = secure_filename(file.filename)
+        ext = os.path.splitext(filename)[1].lower()
+
+        if ext not in ['.pdf', '.docx']:
+            return jsonify({"status": "error", "message": "Unsupported file format. Please upload a PDF (.pdf) or Word document (.docx)."}), 400
+
+        job_description = request.form.get('job_description', '').strip()
+        target_role = request.form.get('target_role', '').strip()
+
+        temp_name = f"ats_{uuid.uuid4().hex}_{filename}"
+        temp_filepath = os.path.join(app.config['UPLOAD_FOLDER'], temp_name)
+        file.save(temp_filepath)
+
+        try:
+            report = audit_resume_for_ats(temp_filepath, job_description=job_description, target_role=target_role)
+            report["filename"] = filename
+            return jsonify({"status": "success", "report": report})
+        finally:
+            if os.path.exists(temp_filepath):
+                try:
+                    os.remove(temp_filepath)
+                except Exception:
+                    pass
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/ats-checker/save', methods=['POST'])
+def api_ats_checker_save():
+    try:
+        payload = request.get_json() or {}
+        filename = payload.get('filename', 'Resume')
+        target_job_title = payload.get('target_job_title', '')
+        ats_score = payload.get('ats_score', 0)
+        ats_grade = payload.get('ats_grade', 'Moderate')
+        format_score = payload.get('format_score', 0)
+        keyword_score = payload.get('keyword_score', 0)
+        section_score = payload.get('section_score', 0)
+        report = payload.get('report', {})
+
+        check_id = save_ats_check(
+            filename, target_job_title, ats_score, ats_grade,
+            format_score, keyword_score, section_score, report
+        )
+        return jsonify({"status": "success", "id": check_id, "message": "ATS audit saved successfully."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/ats-checker/history', methods=['GET'])
+def api_ats_checker_history():
+    try:
+        checks = list_ats_checks(limit=30)
+        return jsonify({"status": "success", "checks": checks})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/ats-checker/<int:check_id>', methods=['GET'])
+def api_ats_checker_get(check_id):
+    try:
+        check = get_ats_check(check_id)
+        if not check:
+            return jsonify({"status": "error", "message": "ATS audit not found."}), 404
+        return jsonify({"status": "success", "check": check})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/ats-checker/<int:check_id>', methods=['DELETE'])
+def api_ats_checker_delete(check_id):
+    try:
+        deleted = delete_ats_check(check_id)
+        return jsonify({"status": "success", "deleted": deleted})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# Coming Soon Feature Routes (Phase 4 Roadmap)
+# ---------------------------------------------------------------------------
+
+
 @app.route('/job-matcher')
 def job_matcher():
-    return render_template(
-        'coming_soon.html',
-        feature_title='Job Description Matcher',
-        feature_icon='bi-bullseye',
-        feature_description='Compare your resume directly against real job descriptions to identify skill gaps and fine-tune your application before submitting.',
-        planned_items=[
-            'Direct side-by-side job description comparison',
-            'Missing hard skill and qualification gap detector',
-            'Semantic match percentage score',
-            'Custom tailored resume bullet suggestions'
-        ],
-        active_page='job_matcher',
-        now=datetime.now()
-    )
+    return redirect(url_for('dashboard'))
 
 
 @app.route('/career-roadmap')
 def career_roadmap():
-    return render_template(
-        'coming_soon.html',
-        feature_title='Career Roadmap & Pathways',
-        feature_icon='bi-signpost-split-fill',
-        feature_description='Personalized milestone-driven growth pathways designed to guide your progression from your current role to your dream career.',
-        planned_items=[
-            'Role progression milestones (Junior to Staff Engineer / Manager)',
-            'Recommended certifications, books, and courses for identified gaps',
-            'Portfolio project recommendations based on trending tech stacks',
-            'Market salary benchmarks and demand analysis'
-        ],
-        active_page='career_roadmap',
-        now=datetime.now()
-    )
+    return redirect(url_for('dashboard'))
 
+
+# ---------------------------------------------------------------------------
+# Settings & Preferences (Active Tool)
+# ---------------------------------------------------------------------------
 
 @app.route('/settings')
 def settings_page():
+    """Active Platform Settings & Preferences Control Center."""
+    settings = get_all_settings()
+    storage = get_storage_stats()
+
+    # Calculate upload cache metrics
+    upload_dir = app.config['UPLOAD_FOLDER']
+    uploads_count = 0
+    uploads_size_bytes = 0
+    if os.path.exists(upload_dir):
+        files = [f for f in os.listdir(upload_dir) if os.path.isfile(os.path.join(upload_dir, f))]
+        uploads_count = len(files)
+        uploads_size_bytes = sum(os.path.getsize(os.path.join(upload_dir, f)) for f in files)
+    uploads_size_kb = round(uploads_size_bytes / 1024, 1)
+
+    # Mask API key for secure presentation
+    api_key = os.getenv("GROQ_API_KEY", "")
+    if api_key and len(api_key) > 8:
+        masked_api_key = f"{api_key[:4]}...{api_key[-4:]}"
+    elif api_key:
+        masked_api_key = "Configured"
+    else:
+        masked_api_key = "Not Configured"
+
     return render_template(
-        'coming_soon.html',
-        feature_title='Settings & Preferences',
-        feature_icon='bi-gear-fill',
-        feature_description='Configure your profile, preferred AI models, target job roles, and platform notification preferences.',
-        planned_items=[
-            'Target career title and experience level configuration',
-            'Groq model parameters & temperature customization',
-            'Local resume storage management and deletion controls',
-            'Dark / Light theme preferences'
-        ],
+        'settings.html',
+        settings=settings,
+        storage=storage,
+        masked_api_key=masked_api_key,
+        uploads_count=uploads_count,
+        uploads_size_kb=uploads_size_kb,
         active_page='settings',
         now=datetime.now()
     )
+
+
+@app.route('/api/settings/save', methods=['POST'])
+def api_settings_save():
+    try:
+        payload = request.get_json() or {}
+        allowed_keys = {
+            "candidate_name", "candidate_email", "candidate_phone", "candidate_location",
+            "target_role", "experience_level", "preferred_model", "ai_rigor",
+            "evaluation_temperature", "auto_cleanup_uploads", "theme_mode", "font_size"
+        }
+        for k, v in payload.items():
+            if k in allowed_keys:
+                set_setting(k, v)
+        return jsonify({"status": "success", "message": "Settings saved successfully."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/settings/test-ai', methods=['POST'])
+def api_settings_test_ai():
+    try:
+        payload = request.get_json() or {}
+        model = payload.get('model', 'qwen/qwen3.8-27b')
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            return jsonify({"status": "error", "message": "GROQ_API_KEY is not configured in your .env file."}), 400
+
+        groq_client = Groq(api_key=api_key)
+        models_to_try = [model, "qwen/qwen3.8-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+        # Deduplicate while preserving order
+        seen = set()
+        candidates = [m for m in models_to_try if not (m in seen or seen.add(m))]
+
+        last_error = None
+        for m in candidates:
+            try:
+                start_time = time.time()
+                response = groq_client.chat.completions.create(
+                    model=m,
+                    messages=[
+                        {"role": "system", "content": "You are Skillverse ping tester. Respond with 'PONG'."},
+                        {"role": "user", "content": "PING"}
+                    ],
+                    max_tokens=10,
+                    temperature=0.1
+                )
+                latency_ms = int(round((time.time() - start_time) * 1000))
+                content = response.choices[0].message.content.strip()
+                return jsonify({
+                    "status": "success",
+                    "model": m,
+                    "latency_ms": latency_ms,
+                    "response": content
+                })
+            except Exception as ex:
+                last_error = ex
+                continue
+
+        if last_error:
+            raise last_error
+        return jsonify({"status": "error", "message": "Unable to connect to Groq AI inference."}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/settings/clear-cache', methods=['POST'])
+def api_settings_clear_cache():
+    try:
+        upload_dir = app.config['UPLOAD_FOLDER']
+        deleted_count = 0
+        bytes_freed = 0
+        if os.path.exists(upload_dir):
+            for f in os.listdir(upload_dir):
+                f_path = os.path.join(upload_dir, f)
+                if os.path.isfile(f_path):
+                    bytes_freed += os.path.getsize(f_path)
+                    try:
+                        os.remove(f_path)
+                        deleted_count += 1
+                    except Exception:
+                        pass
+        return jsonify({
+            "status": "success",
+            "files_deleted": deleted_count,
+            "bytes_freed_kb": round(bytes_freed / 1024, 1)
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/settings/clear-history', methods=['POST'])
+def api_settings_clear_history():
+    try:
+        payload = request.get_json() or {}
+        table = payload.get('table', '')
+        allowed_tables = {"mock_interviews", "ats_checks", "question_history", "resume_audits"}
+        if table not in allowed_tables:
+            return jsonify({"status": "error", "message": "Invalid table specified for reset."}), 400
+
+        deleted = clear_table_records(table)
+        return jsonify({"status": "success", "table": table, "records_deleted": deleted})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/logout')
+def logout():
+    """Clear session data and redirect safely to the Dashboard."""
+    session.clear()
+    return redirect(url_for('dashboard'))
 
 
 if __name__ == '__main__':
